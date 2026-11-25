@@ -108,6 +108,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - `init_year(anno)` crea l'anno e prende i saldi iniziali dai saldi finali di dicembre dell'anno prima. Finché l'anno è in `bozza` i saldi iniziali restano modificabili.
 - Vista Chiusure (`#/chiusure/anno/mese`): per il mese scelto, controlli prima della chiusura (voci e causali finanziarie con budget diverso dal consuntivo, Var da allineare, quadratura, riconciliazione) che avvisano ma non bloccano; "Chiudi mese" / "Riapri mese" con conferma. Il pulsante "Allinea il budget al consuntivo" fa lo stesso per tutte le voci manuali del mese, con conferma che elenca le voci e l'effetto sugli imprevisti (`alignMonthRows`); le causali calcolate si sistemano da sole.
 - L'anno si chiude (`years.status = 'chiuso'`) solo con tutti i 12 mesi chiusi, e si può riaprire.
+- Anno prima: le Chiusure del primo anno offrono "Crea il <anno − 1>" (`init_year`, saldi iniziali a zero da compilare nell'Apertura); i suoi saldi finali di dicembre si riportano poi sull'anno dopo con il meccanismo qui sotto.
 - Anno dopo: si crea con `init_year`; se esiste ed è in bozza, un pulsante riallinea i suoi saldi iniziali ai saldi finali reali di dicembre (per le registrazioni arrivate dopo la creazione).
 
 ## Riconciliazione ("Saldo per controllo")

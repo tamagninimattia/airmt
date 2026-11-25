@@ -293,6 +293,9 @@ function yearCard() {
       h('div', { class: 'actions' }, close));
   }
 
+  // anno prima del primo: si può aggiungere, i suoi saldi finali diventano gli iniziali di questo
+  if (data.year === Math.min(...S.years)) out.push(...previousYearSection());
+
   // anno dopo: si crea dai saldi finali; finché è in bozza i suoi saldi iniziali si possono riallineare
   const nextYear = data.year + 1;
   if (!next) {
@@ -332,6 +335,29 @@ function yearCard() {
       h('a', { href: '#/apertura/' + nextYear }, 'Riportalo in bozza dall\'Apertura anno'), ' per aggiornarli.'));
   }
   return out;
+}
+
+// Crea l'anno precedente al primo: 12 mesi aperti e saldi iniziali a zero, da compilare nell'Apertura.
+// Dalle sue Chiusure i saldi finali di dicembre si riportano poi su questo anno.
+function previousYearSection() {
+  const year = S.data.year;
+  const prev = year - 1;
+  const create = h('button', { type: 'button', class: 'quiet' }, 'Crea il ' + prev);
+  create.addEventListener('click', async () => {
+    const ok = await confirmBox({ title: `Creare il ${prev}?`, ok: 'Crea il ' + prev,
+      lines: [`Il ${prev} nasce in bozza, con i 12 mesi aperti e i saldi iniziali a zero: li compili nell'Apertura (saldi al 1/1/${prev}).`,
+              `I saldi iniziali del ${year} per ora non cambiano. Quando il ${prev} è completo li riallinei dalle Chiusure del ${prev}, con il ${year} in bozza.`] });
+    if (!ok) return;
+    busy(create, 'Creazione del ' + prev, async () => {
+      // si apre l'Apertura del nuovo anno, che spiega cosa fare (il cambio di pagina cancella i messaggi)
+      const { error } = await sb.rpc('init_year', { p_year: prev });
+      if (error) throw error;
+      location.hash = '#/apertura/' + prev;
+    });
+  });
+  return [h('h3', null, 'Anno ' + prev),
+    h('p', { class: 'hint' }, `Puoi aggiungere il ${prev}: i suoi saldi finali di dicembre diventeranno gli iniziali del ${year}.`),
+    h('div', { class: 'actions' }, create)];
 }
 
 async function setYearStatus(button, status) {
