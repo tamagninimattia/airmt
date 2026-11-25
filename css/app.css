@@ -211,7 +211,10 @@ dl.totals dd.strong { font-weight: 600; }
 .journal-cols { display: grid; gap: 1.5rem; }
 .journal-side p { margin: 0; }
 @media (min-width: 64rem) {
-  .journal-cols { grid-template-columns: minmax(0, 34rem) minmax(14rem, 1fr); align-items: start; }
+  main:has(.journal-cols) { max-width: 96rem; }
+  .journal-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .journal-cols .journal { max-width: none; }
+  .journal-cols .alert-summary { max-width: none; }
   .journal-side { margin-top: 6.4rem; position: sticky; top: 1rem; }
 }
 .month-nav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .5rem 0 1rem; font-weight: 600; text-transform: capitalize; }
