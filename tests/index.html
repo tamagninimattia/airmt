@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; color: #1c2b36; background: #eef2f1; }
+  ul { list-style: none; padding: 0; }
+  li { padding: .3rem 0; white-space: pre-wrap; }
+  .pass { color: #0f6b5c; }
+  .fail { color: #b3261e; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Test del motore e delle regole</h1>
+<p id="summary">In esecuzione…</p>
+<ul id="out"></ul>
+<script type="module">
+  import { run } from './runner.js';
+  import './models.test.js';
+  import './engine.test.js';
+  import './budget.test.js';
+  import './accounts.test.js';
+  import './grid.test.js';
+  import './dashboard.test.js';
+  import './closing.test.js';
+  const failed = await run(document.getElementById('out'));
+  document.getElementById('summary').textContent = document.title;
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+*.xlsx
+seed_2027.sql
+tests/chart-2027.js
+tests/excel-2027.js
+xlsx-tmp/
+tests/expected-2027.js
+verifica-2027.md

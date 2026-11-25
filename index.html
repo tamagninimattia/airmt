@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contabilità personale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0f6b5c">
+<meta name="apple-mobile-web-app-title" content="Contabilità">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/">Contabilità personale</a>
+  <button type="button" class="menu-btn quiet" id="menu-btn" aria-expanded="false" aria-controls="nav" hidden>☰ <span id="menu-label">Menu</span></button>
+  <nav id="nav" aria-label="Sezioni" hidden>
+    <a href="#/dashboard" data-route="dashboard">Dashboard</a>
+    <a href="#/giornale" data-route="giornale">Giornale</a>
+    <a href="#/budget" data-route="budget">Budget</a>
+    <a href="#/schede" data-route="schede">Schede conto</a>
+    <a href="#/patrimonio" data-route="patrimonio">Patrimonio</a>
+    <a href="#/chiusure" data-route="chiusure">Chiusure</a>
+    <a href="#/apertura" data-route="apertura">Apertura anno</a>
+    <a href="#/avvio" data-route="avvio">Avvio</a>
+    <a href="#/impostazioni" data-route="impostazioni">Impostazioni</a>
+    <span class="who" id="who"></span>
+    <button type="button" class="quiet small" id="btn-logout">Esci</button>
+  </nav>
+</header>
+
+<main>
+  <p id="msg" role="status" aria-live="polite"></p>
+  <div id="view"></div>
+</main>
+
+<script>
+  // Project Settings -> API: Project URL e chiave "anon" (pubblica). Mai la service_role.
+  window.APP_CONFIG = {
+    url: 'https://jdevlffzmeiblujqzdwy.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZXZsZmZ6bWVpYmx1anF6ZHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzUxNzgsImV4cCI6MjEwNzY1MTE3OH0.lyQlI7NiUDvVx2h10M132438uiJF7x0Qbsf4nbr1s5w'
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

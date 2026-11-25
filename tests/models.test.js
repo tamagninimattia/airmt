@@ -1,0 +1,88 @@
+// Regole pure di formati, Impostazioni e Giornale
+import { test, eq, ok } from './runner.js';
+import * as F from '../js/format.js';
+import * as M from '../js/settings-model.js';
+import * as J from '../js/journal-model.js';
+
+test('lettura degli importi scritti a mano', () => {
+  eq(F.parseAmount('12,50'), 12.5, 'virgola');
+  eq(F.parseAmount('1.234,56'), 1234.56, 'migliaia e virgola');
+  eq(F.parseAmount('12.5'), 12.5, 'punto decimale');
+  eq(F.parseAmount('1.234'), 1234, 'punto delle migliaia');
+  eq(F.parseAmount(' 10 € '), 10, 'simbolo dell\'euro');
+  eq(F.parseAmount('−3'), -3, 'segno meno tipografico');
+  ok(Number.isNaN(F.parseAmount('1,234')), 'tre decimali');
+  ok(Number.isNaN(F.parseAmount('abc')), 'testo');
+  ok(Number.isNaN(F.parseAmount('')), 'vuoto');
+});
+
+test('formato degli importi', () => {
+  eq(F.fmtAmount(12345.67), '12.345,67');
+  eq(F.fmtAmount(-2468.24), '−2.468,24');
+  eq(F.fmtAmount(0.1 + 0.2), '0,30');
+  eq(F.fmtAmount(1234567), '1.234.567,00');
+  eq(F.parseAmount(F.fmtAmount(-2468.24)), -2468.24, 'andata e ritorno');
+});
+
+const accs = [
+  { id: 'fin', name: 'Conto corrente FINECO', type: 'patrimoniale', sort_order: 2 },
+  { id: 'cc', name: 'Carta di credito (corrente)', type: 'patrimoniale', sort_order: 11 },
+  { id: 'imp', name: 'Spese indivise non preventivate', type: 'economico', kind: 'costo', is_contingency: true, sort_order: 199 }
+];
+const caus = [
+  { id: 'c1', code: 'COSFIN', description: 'Costi Fineco', kind: 'costo', credit_account_id: 'fin', sort_order: 402 },
+  { id: 'c2', code: 'GCCCRED', description: 'Giroconto', kind: 'finanziaria', budget_rule: 'card_giroconto', sort_order: 17 },
+  { id: 'c3', code: 'RICFIN', description: 'Ricavi Fineco', kind: 'ricavo', debit_account_id: 'fin', sort_order: 302 }
+];
+
+test('impostazioni: conti', () => {
+  const a = M.buildAccount('economico', { name: ' Bar ', kind: 'costo', budget_section: '', standard_causale_id: 'c1',
+                                          sort_order: '200', active: true, is_contingency: true });
+  eq([a.name, a.budget_section, a.sort_order], ['Bar', null, 200], 'costruzione');
+  ok(/imprevisti/.test(M.validateAccount(a, null, accs, caus).join()), 'imprevisti unico');
+  eq(M.validateAccount({ ...a, is_contingency: true }, 'imp', accs, caus), [], 'stesso conto degli imprevisti');
+  const r = M.buildAccount('economico', { name: 'Bar', kind: 'ricavo', standard_causale_id: 'c1', sort_order: '1', active: true });
+  ok(/causale di ricavo/.test(M.validateAccount(r, null, accs, caus).join()), 'canale dello stesso tipo');
+  ok(/Esiste già/.test(M.validateAccount({ ...r, name: 'conto corrente fineco' }, null, accs, caus).join()), 'nome doppio');
+  const p = M.buildAccount('patrimoniale', { name: 'Mutuo', grp: 'debiti', sort_order: '15', active: true });
+  eq(p.side, 'passivo', 'natura dal gruppo');
+  eq(M.validateAccount(p, null, accs, caus), [], 'patrimoniale valido');
+});
+
+test('impostazioni: causali', () => {
+  const c = M.buildCausale({ code: 'cosx', description: 'X', kind: 'costo', debit_account_id: 'fin',
+                             credit_account_id: 'cc', budget_rule: 'mt_rimborso', sort_order: '5', active: true });
+  eq([c.code, c.debit_account_id, c.budget_rule], ['COSX', null, null], 'costruzione');
+  eq(M.validateCausale(c, null, caus, accs), [], 'valida');
+  const g = M.buildCausale({ code: 'GIRO2', description: 'Y', kind: 'finanziaria', debit_account_id: 'fin',
+                             credit_account_id: 'fin', budget_rule: 'card_giroconto', sort_order: '5' });
+  const e = M.validateCausale(g, null, caus, accs).join(' ');
+  ok(/diversi/.test(e) && /GCCCRED/.test(e), 'Dare = Avere e regola già usata');
+  ok(/2–12/.test(M.validateCausale({ ...g, code: 'COS FIN' }, null, caus, accs).join()), 'codice');
+  ok(/patrimoniali/.test(M.validateCausale({ ...g, credit_account_id: 'imp' }, null, caus, accs).join()), 'conti fissi patrimoniali');
+  ok(M.accountDeleteBlock({ entries: 0, causali: [caus[0]] }).includes('COSFIN'), 'eliminazione bloccata');
+  ok(M.causaleLocks({ entries: 0, standardFor: [{}] }).kind, 'tipo bloccato se canale standard');
+});
+
+test('giornale: mesi e date', () => {
+  eq(J.monthBounds(2027, 12), { from: '2027-12-01', to: '2028-01-01' });
+  eq(J.shiftMonth({ year: 2027, month: 1 }, -1), { year: 2026, month: 12 });
+  eq(J.parseMonthParam('2027-13'), null);
+  eq(J.defaultMonth([{ year: 2027 }], [{ year: 2027, month: 1, closed: true }], '2026-10-15'), { year: 2027, month: 2 });
+  eq(J.defaultMonth([{ year: 2026 }], [], '2026-10-15'), { year: 2026, month: 10 });
+  eq(J.defaultDate({ year: 2027, month: 2 }, '2026-10-15'), '2027-02-01');
+});
+
+test('giornale: Alert, costruzione e validazione', () => {
+  const cos = { id: 'COSFIN', kind: 'costo', credit_account_id: 'fin' };
+  const ccred = { id: 'COSCCRED', kind: 'costo', credit_account_id: 'cc' };
+  const am = { id: 'am', name: 'Apple Music', type: 'economico', kind: 'costo', standard_causale_id: 'COSCCRED' };
+  ok(J.channelAlert(cos, am), 'fuori canale');
+  ok(!J.channelAlert(ccred, am), 'canale standard');
+  eq(J.buildEntry(cos, 'am', '2027-03-04', 10.99, ' '),
+     { entry_date: '2027-03-04', causale_id: 'COSFIN', debit_account_id: 'am', credit_account_id: 'fin', amount: 10.99, note: null });
+  const fin = { id: 'PREFIN', kind: 'finanziaria', debit_account_id: 'por', credit_account_id: 'fin' };
+  eq(J.validateEntry({ causale: fin, account: null, date: '2027-01-02', amount: 50 }, [2027]), []);
+  const errs = J.validateEntry({ causale: cos, account: null, date: '2026-01-02', amount: NaN }, [2027]).join(' ');
+  ok(/conto economico/.test(errs) && /2026/.test(errs) && /12,50/.test(errs), errs);
+});
