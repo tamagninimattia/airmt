@@ -61,5 +61,5 @@ export function confirmBox({ title, lines = [], ok = 'Conferma', danger = false 
 // Pagina vuota quando non esiste ancora nessun anno
 export function noYear(root, title) {
   root.replaceChildren(h('div', { class: 'narrow' }, h('h1', null, title),
-    h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crealo dall\'Avvio'), '.')));
+    h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crea il primo anno'), '.')));
 }

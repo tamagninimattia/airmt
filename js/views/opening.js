@@ -12,7 +12,7 @@ export async function render(root, { session, params }) {
   if (!years.length) {
     root.replaceChildren(h('div', { class: 'narrow' },
       h('h1', null, 'Apertura anno'),
-      h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crealo dall\'Avvio'), '.')));
+      h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crea il primo anno'), '.')));
     return;
   }
   const chosen = years.find((y) => y.year === +params[0])

@@ -23,7 +23,7 @@ export async function render(root, { params }) {
   if (!view) {
     root.replaceChildren(h('div', { class: 'narrow' },
       h('h1', null, 'Giornale'),
-      h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crealo dall\'Avvio'), '.')));
+      h('p', null, 'Non hai ancora creato nessun anno. ', h('a', { href: '#/avvio' }, 'Crea il primo anno'), '.')));
     return;
   }
 

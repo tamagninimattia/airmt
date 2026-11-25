@@ -69,7 +69,7 @@ export function validateEntry({ causale, account, date, amount }, yearNumbers) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) errors.push('Inserisci la data.');
   else if (!yearNumbers.includes(+date.slice(0, 4))) {
-    errors.push(`L'anno ${date.slice(0, 4)} non esiste ancora: crealo dall'Avvio o correggi la data.`);
+    errors.push(`L'anno ${date.slice(0, 4)} non esiste ancora: crealo dalle Chiusure dell'anno prima, oppure correggi la data.`);
   }
   if (Number.isNaN(amount)) errors.push('Scrivi l\'importo come 12,50 (al massimo 2 decimali).');
   else if (!(amount > 0)) errors.push('L\'importo deve essere maggiore di zero.');

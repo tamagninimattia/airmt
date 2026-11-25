@@ -21,7 +21,7 @@ export async function loadYear(year) {
       rows(sb.from('months').select('month, closed, closed_at').eq('year', year).order('month')),
       rows(sb.from('reconciliations').select('month, account_id, actual_balance, note').eq('year', year))
     ]);
-  if (!yearRow) throw new Error(`l'anno ${year} non esiste: crealo dall'Avvio`);
+  if (!yearRow) throw new Error(`l'anno ${year} non esiste: crealo dalle Chiusure dell'anno prima`);
 
   return {
     year,
