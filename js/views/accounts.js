@@ -1,8 +1,7 @@
 // Partitario (schede conto): per ogni conto patrimoniale, saldo iniziale, variazioni per causale e saldo finale
 // mese per mese (Budget, Progr., Scost.), più i movimenti reali di un mese con il saldo progressivo.
-import { sb, rowsAll } from '../db.js';
 import { h, noYear } from '../ui.js';
-import { loadYear, yearList, pickYear } from '../data.js';
+import { loadYear, yearList, pickYear, loadProvisional } from '../data.js';
 import { computeActual, computeBudget } from '../engine/year.js';
 import { currentMonth } from '../budget-model.js';
 import { cardRows, accountLedger, sides } from '../accounts-model.js';
@@ -18,14 +17,7 @@ export async function render(root, { params }) {
   if (!years.length) return noYear(root, 'Partitario');
   const year = pickYear(years, params[0], +isoDate().slice(0, 4));
   // i movimenti provvisori non sono nei dati dell'anno: si leggono a parte, solo per mostrarli
-  const [data, provisional] = await Promise.all([
-    loadYear(year),
-    rowsAll(() => sb.from('entries')
-      .select('id, entry_date, causale_id, debit_account_id, credit_account_id, amount, note')
-      .eq('provisional', true)
-      .gte('entry_date', `${year}-01-01`).lt('entry_date', `${year + 1}-01-01`)
-      .order('entry_date').order('id'))
-  ]);
+  const [data, provisional] = await Promise.all([loadYear(year), loadProvisional(year)]);
   const accounts = sortByOrder(data.accounts.filter((a) => a.type === 'patrimoniale'));
   const id = decodeURIComponent(params[1] || '');
   const account = accounts.find((a) => a.id === id) ?? accounts.find((a) => a.active) ?? accounts[0];

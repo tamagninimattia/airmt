@@ -133,6 +133,23 @@ export function alignToActual(row, month, cur) {
   return round2(from - to) !== 0 ? { from, to } : null;
 }
 
+// Celle Progr. che cambiano includendo i movimenti provvisori (in lilla nel Budget).
+// shown: righe con il consuntivo + provvisori; confirmed: le stesse righe con il solo consuntivo.
+// Restituisce key -> 13 booleani (i 12 mesi e il totale anno).
+export function provisionalMarks(shown, confirmed) {
+  const base = new Map(confirmed.map((r) => [r.key, r]));
+  const marks = new Map();
+  for (const row of shown) {
+    if (!row.actual) continue;
+    const c = base.get(row.key) ?? { ...row, actual: zeros() };
+    const diff = (a, b) => round2(a ?? 0) !== round2(b ?? 0);
+    const m = row.actual.map((v, i) => diff(v, c.actual?.[i]));
+    m.push(diff(rowTotal(row, row.actual), rowTotal(c, c.actual)));
+    if (m.some(Boolean)) marks.set(row.key, m);
+  }
+  return marks;
+}
+
 export function rowTotal(row, series) {
   if (!series || row.total === 'none') return null;
   if (row.total === 'last') return series[11];

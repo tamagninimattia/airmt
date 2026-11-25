@@ -52,3 +52,13 @@ export function pickYear(years, param, todayYear) {
   if (years.includes(+param)) return +param;
   return years.includes(todayYear) ? todayYear : years.at(-1);
 }
+
+// Movimenti provvisori dell'anno: non entrano nei calcoli, si leggono a parte solo per mostrarli
+// (Partitario) o per il Progr. "con i provvisori" (Budget)
+export async function loadProvisional(year) {
+  return rowsAll(() => sb.from('entries')
+    .select('id, entry_date, causale_id, debit_account_id, credit_account_id, amount, note')
+    .eq('provisional', true)
+    .gte('entry_date', `${year}-01-01`).lt('entry_date', `${year + 1}-01-01`)
+    .order('entry_date').order('id'));
+}

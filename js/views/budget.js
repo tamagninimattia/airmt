@@ -2,9 +2,9 @@
 // Pensato per il desktop. Le celle si salvano da sole quando escono dal fuoco o con Invio.
 import { sb, rows as query } from '../db.js';
 import { $, h, say, clearMsg, noYear } from '../ui.js';
-import { loadYear, yearList, pickYear } from '../data.js';
+import { loadYear, yearList, pickYear, loadProvisional } from '../data.js';
 import { computeActual, computeBudget, budgetSummary, suggestAdjustments, spreadTotal } from '../engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual } from '../budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual, provisionalMarks } from '../budget-model.js';
 import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached } from '../grid.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
 
@@ -21,12 +21,15 @@ export async function render(root, { session, params }) {
   const years = await yearList();
   if (!years.length) return noYear(root, 'Budget');
   const year = pickYear(years, params[0], +isoDate().slice(0, 4));
-  const data = await loadYear(year);
+  const [data, provisional] = await Promise.all([loadYear(year), loadProvisional(year)]);
   const cur = currentMonth(data.months);
 
   S = {
-    root, session, years, data, cur,
-    actual: computeActual(data),
+    root, session, years, data, cur, provisional,
+    confirmed: computeActual(data),
+    // Progr. con anche i movimenti provvisori: solo da vedere, Var e controlli restano sul confermato
+    withProv: computeActual({ ...data, entries: [...data.entries, ...provisional] }),
+    showProv: loadShowProv(),
     suggested: suggestAdjustments(data),   // dipende solo dal Giornale: si calcola una volta
     expanded: loadExpanded(year, cur),
     showZero: false,
@@ -36,12 +39,25 @@ export async function render(root, { session, params }) {
   draw();
 }
 
+// La scelta "mostra i provvisori" si ricorda nel browser
+function loadShowProv() {
+  try { return localStorage.getItem('budget.provvisori') === '1'; } catch { return false; }
+}
+function saveShowProv(on) {
+  try { localStorage.setItem('budget.provvisori', on ? '1' : '0'); } catch { /* ignorato */ }
+}
+
 function recompute() {
   S.budget = computeBudget(S.data);
   S.summary = budgetSummary(S.data, S.budget);
   S.align = alignmentByMonth(S.suggested, S.budget.adjustments, S.cur);
+  S.actual = S.showProv ? S.withProv : S.confirmed;
   S.rows = buildRows(S.data, { actual: S.actual, budget: S.budget },
                      { showZero: S.showZero, alignCounts: S.align.counts });
+  // celle Progr. che cambiano per effetto dei provvisori: in lilla
+  S.marks = S.showProv
+    ? provisionalMarks(S.rows, buildRows(S.data, { actual: S.confirmed, budget: S.budget }, { showZero: true }))
+    : new Map();
 }
 
 function refresh() {
@@ -78,14 +94,19 @@ function draw() {
 
   const showZero = h('input', { type: 'checkbox', checked: S.showZero });
   showZero.addEventListener('change', () => { S.showZero = showZero.checked; recompute(); draw(); });
+  const prov = h('input', { type: 'checkbox', checked: S.showProv });
+  prov.addEventListener('change', () => { S.showProv = prov.checked; saveShowProv(prov.checked); recompute(); draw(); });
 
   S.root.replaceChildren(h('div', { class: 'budget' },
     h('div', { class: 'budget-head' },
       h('h1', null, 'Budget ' + S.data.year),
       S.years.length > 1 && h('nav', { class: 'tabs', 'aria-label': 'Anni' },
         S.years.map((y) => h('a', { href: '#/budget/' + y, 'aria-current': y === S.data.year ? 'page' : null }, y))),
-      h('label', { class: 'check' }, showZero, ' Mostra anche le righe a zero')),
+      h('div', { class: 'head-checks' },
+        h('label', { class: 'check' }, showZero, ' Mostra anche le righe a zero'),
+        h('label', { class: 'check' }, prov, ` Mostra i movimenti provvisori (${S.provisional.length})`))),
     S.status,
+    S.showProv && h('p', { class: 'hint prov-hint' }, 'Il Progr. in lilla comprende movimenti provvisori: è una previsione, non entra in Var, controlli, Dashboard e Chiusure.'),
     h('p', { class: 'hint' }, 'Clicca un mese per esploderlo. Scrivi nelle celle per cambiare il budget: si salva da solo, Invio passa alla riga sotto. Con ⋯ copi un importo su tutti i mesi o dividi il totale annuo.'),
     h('div', { class: 'grid-wrap' }, table)));
 
@@ -164,9 +185,12 @@ function update() {
       if (reg.actual[m]) {
         const a = row.actual?.[m];
         setNum(reg.actual[m], a ?? null, row);
+        const prov = Boolean(S.marks.get(row.key)?.[m]);
+        reg.actual[m].classList.toggle('prov', prov);
         const sync = reg.sync[m];
         if (sync) {
-          const x = alignToActual(row, m + 1, S.cur);
+          // con i provvisori nel Progr. il budget non si allinea: il dato non è ancora confermato
+          const x = prov ? null : alignToActual(row, m + 1, S.cur);
           // invisibile ma con il suo spazio (classe off): le celle gialle restano allineate
           sync.classList.toggle('off', !x);
           sync.tabIndex = x ? 0 : -1;
@@ -199,6 +223,7 @@ function update() {
     const ta = rowTotal(row, row.actual);
     setNum(reg.total[0], tb, row);
     setNum(reg.total[1], ta, row);
+    reg.total[1].classList.toggle('prov', Boolean(S.marks.get(row.key)?.[12]));
     setNum(reg.total[2], cellVariance(row, tb, ta), row, { scost: true });
   }
   updateStatus();

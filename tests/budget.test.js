@@ -4,7 +4,7 @@ import { year2027, PROVA_GIORNALE } from './fixture-2027.js';
 import { E } from './expected-2027.js';
 import { EXCEL_2027 as X } from './excel-2027.js';
 import { computeActual, computeBudget, suggestAdjustments, spreadTotal } from '../js/engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual } from '../js/budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual, provisionalMarks } from '../js/budget-model.js';
 
 function grid(data, opts) {
   const result = { actual: computeActual(data), budget: computeBudget(data) };
@@ -113,4 +113,18 @@ test('«=» porta il budget del mese al consuntivo', () => {
   eq(alignToActual(row, 4, 3), null, 'mese futuro');
   eq(alignToActual({ ...row, actual: row.budget }, 1, 3), null, 'già allineato');
   eq(alignToActual({ ...row, edit: null }, 1, 3), null, 'riga calcolata');
+});
+
+test('Budget con i provvisori: celle Progr. in lilla dove cambiano', () => {
+  const data = year2027({ entries: PROVA_GIORNALE });
+  const prov = [{ entry_date: '2027-02-03', causale_id: 'COSCCRED', debit_account_id: 'Ristoranti',
+                  credit_account_id: 'Carta di credito (corrente)', amount: 30 }];
+  const budget = computeBudget(data);
+  const confirmed = buildRows(data, { actual: computeActual(data), budget }, { showZero: true });
+  const shown = buildRows(data, { actual: computeActual({ ...data, entries: [...data.entries, ...prov] }), budget }, { showZero: true });
+  const marks = provisionalMarks(shown, confirmed);
+  eq(marks.get('acc-Ristoranti').map((v, i) => (v ? i : null)).filter((i) => i != null), [1, 12], 'febbraio e totale anno');
+  ok(marks.get('tot-costo')?.[1] && marks.get('ch-COSCCRED')?.[1], 'totale costi e canale carta');
+  ok(!marks.has('acc-Caffè'), 'voci senza provvisori');
+  eq(provisionalMarks(confirmed, confirmed).size, 0, 'senza provvisori niente lilla');
 });

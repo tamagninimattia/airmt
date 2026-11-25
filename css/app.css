@@ -388,6 +388,11 @@ table.grid td.future { opacity: .55; }
 .ledger table.list tr.edge td { font-weight: 600; background: var(--surface-2); }
 .ledger td.neg { color: var(--error); }
 .ledger-head label.prov-toggle { margin: 0 0 0 auto; }
+/* Budget: Progr. che comprende movimenti provvisori */
+table.grid td.a.prov { color: var(--prov); font-style: italic; background: var(--prov-bg); }
+.budget-head .head-checks { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; }
+.budget-head .head-checks label.check { margin: 0; }
+.prov-hint { color: var(--prov); }
 .ledger table.list tr.provisional td { color: var(--prov); font-style: italic; background: var(--prov-bg); }
 .ledger table.list tr.provisional td:first-child { box-shadow: inset 3px 0 0 var(--prov); }
 .ledger table.list tr.provisional .badge { margin-left: .4rem; font-style: normal; }
@@ -510,6 +515,7 @@ table.rec td:last-child { width: 40%; }
   .tile-value { font-size: 1.3rem; }
   .month-strip a { padding: .5rem .75rem; }
   .budget-head label.check { margin: 0; }
+  .budget-head .head-checks { margin-left: 0; align-items: flex-start; }
   .budget-head select { min-width: 0; width: 100%; }
   /* Giornale: pulsanti larghi e facili da toccare */
   .entry-form .actions button { flex: 1 1 auto; min-height: 2.9rem; }
