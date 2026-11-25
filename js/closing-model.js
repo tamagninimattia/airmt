@@ -40,14 +40,18 @@ export function monthChecks(data, { actual, budget }, month, alignItems = []) {
   for (const a of sortByOrder(data.accounts.filter((x) => x.type === 'economico' && !x.is_contingency))) {
     const b = budget.econ.get(a.id)?.[m] ?? 0;
     const ac = actual.econ.get(a.id)?.[m] ?? 0;
-    if (round2(b - ac) !== 0) budgetDiffs.push({ label: a.name, kind: a.kind, budget: b, actual: ac, diff: round2(ac - b) });
+    if (round2(b - ac) !== 0) {
+      budgetDiffs.push({ label: a.name, kind: a.kind, budget: b, actual: ac, diff: round2(ac - b),
+                         edit: { table: 'budget_accounts', id: a.id } });
+    }
   }
   for (const c of sortByOrder(data.causali.filter((x) => x.kind === 'finanziaria'), 'code')) {
     const b = budget.causali.get(c.id)?.[m] ?? 0;
     const ac = actual.causali.get(c.id)?.[m] ?? 0;
     if (round2(b - ac) !== 0) {
       budgetDiffs.push({ label: c.description, code: c.code, kind: 'finanziaria', budget: b, actual: ac,
-                         diff: round2(ac - b), calculated: Boolean(c.budget_rule) });
+                         diff: round2(ac - b), calculated: Boolean(c.budget_rule),
+                         edit: c.budget_rule ? null : { table: 'budget_causali', id: c.id } });
     }
   }
   const recs = reconciliationRows(data, actual, month);
@@ -59,6 +63,18 @@ export function monthChecks(data, { actual, budget }, month, alignItems = []) {
     mismatched: recs.filter((r) => r.status === 'diff'),
     accounts: recs.length
   };
+}
+
+// "Allinea tutto il budget del mese al consuntivo": righe da salvare per tabella, dalle differenze
+// di monthChecks. Le causali calcolate (senza edit) si sistemano da sole e restano fuori.
+export function alignMonthRows(budgetDiffs, userId, year, month) {
+  const out = { budget_accounts: [], budget_causali: [] };
+  for (const d of budgetDiffs) {
+    if (!d.edit) continue;
+    const key = d.edit.table === 'budget_accounts' ? 'account_id' : 'causale_id';
+    out[d.edit.table].push({ user_id: userId, year, month, [key]: d.edit.id, amount: d.actual });
+  }
+  return out;
 }
 
 // L'anno si può chiudere quando tutti i 12 mesi sono chiusi

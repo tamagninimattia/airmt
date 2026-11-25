@@ -5,8 +5,8 @@ import { h, say, busy, confirmBox, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget, suggestAdjustments } from '../engine/year.js';
 import { currentMonth, alignmentByMonth } from '../budget-model.js';
-import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings } from '../closing-model.js';
-import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
+import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows } from '../closing-model.js';
+import { MONTHS, fmtAmount, parseAmount, isoDate, round2 } from '../format.js';
 
 const SHORT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
 let S = null;
@@ -172,6 +172,10 @@ function closeCard() {
             h('td', { class: 'num' }, (d.diff > 0 ? '+' : '') + money(d.diff))))))))
     : null;
 
+  const manual = c.budgetDiffs.filter((d) => d.edit);
+  const alignBtn = h('button', { type: 'button', class: 'quiet small' }, 'Allinea il budget al consuntivo');
+  alignBtn.addEventListener('click', () => alignMonth(alignBtn, manual));
+
   const button = h('button', { type: 'button', class: closed ? 'quiet' : null }, closed ? 'Riapri mese' : 'Chiudi mese');
   button.addEventListener('click', () => toggleMonth(button, !closed, c, imprevisti));
 
@@ -185,7 +189,8 @@ function closeCard() {
         ? `${c.budgetDiffs.length} voci con budget diverso dal consuntivo`
         : 'Budget allineato al consuntivo',
         c.budgetDiffs.length > 0 && h('p', { class: 'hint' }, 'Le causali calcolate si allineano da sole quando lo sono voci, canali e Var. ',
-          h('a', { href: '#/budget/' + data.year }, 'Apri il Budget')), diffs),
+          h('a', { href: '#/budget/' + data.year }, 'Apri il Budget')),
+        manual.length > 0 && h('div', { class: 'actions tight' }, alignBtn), diffs),
       item(!c.varToAlign.length, c.varToAlign.length ? `${c.varToAlign.length} Var da allineare` : 'Var allineate con gli Alert',
         c.varToAlign.length > 0 && h('p', { class: 'hint' }, h('a', { href: '#/budget/' + data.year }, 'Allineale nel Budget'))),
       item(c.quadratura === 0, c.quadratura === 0 ? 'Quadratura del consuntivo a 0' : 'Quadratura del consuntivo: ' + money(c.quadratura)),
@@ -197,6 +202,36 @@ function closeCard() {
         h('div', null, `Alla chiusura gli imprevisti di ${name} (${money(imprevisti)} €) vanno a 0 e il residuo si ridivide sui mesi ancora aperti.`))),
     h('div', { class: 'actions' }, button)
   ];
+}
+
+// Tutte le voci manuali del mese prendono come budget il consuntivo. Le causali calcolate
+// si sistemano da sole; la differenza tra ricavi e costi passa agli imprevisti dei mesi aperti.
+async function alignMonth(button, diffs) {
+  const { data, month } = S;
+  const name = MONTHS[month - 1];
+  const sign = (v) => (v > 0 ? '+' : '') + fmtAmount(v);
+  const toContingency = round2(diffs.reduce((t, d) => t + (d.kind === 'ricavo' ? d.diff : d.kind === 'costo' ? -d.diff : 0), 0));
+  const shown = diffs.slice(0, 10).map((d) => `${d.label}: ${fmtAmount(d.budget)} → ${fmtAmount(d.actual)}`);
+  const ok = await confirmBox({ title: `Allineare il budget di ${name} al consuntivo?`,
+    lines: [`${diffs.length} voci prenderanno come budget il consuntivo del mese:`,
+            ...shown, ...(diffs.length > 10 ? [`… e altre ${diffs.length - 10}.`] : []),
+            toContingency !== 0 ? `Gli imprevisti dei mesi non chiusi cambiano in tutto di ${sign(toContingency)} €.` : null,
+            'Il budget originale non si conserva: per tornare indietro va riscritto a mano.'].filter(Boolean),
+    ok: 'Allinea' });
+  if (!ok) return;
+  busy(button, 'Allineamento del budget', async () => {
+    const out = alignMonthRows(diffs, S.session.user.id, data.year, month);
+    if (out.budget_accounts.length) {
+      await rows(sb.from('budget_accounts').upsert(out.budget_accounts, { onConflict: 'user_id,year,month,account_id' }));
+    }
+    if (out.budget_causali.length) {
+      await rows(sb.from('budget_causali').upsert(out.budget_causali, { onConflict: 'user_id,year,month,causale_id' }));
+    }
+    S.data = await loadYear(data.year);
+    compute();
+    draw();
+    say(`Budget di ${name} allineato al consuntivo (${diffs.length} voci).`);
+  });
 }
 
 async function toggleMonth(button, close, checks, imprevisti) {

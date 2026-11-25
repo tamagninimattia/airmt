@@ -197,6 +197,7 @@ dialog::backdrop { background: rgb(0 0 0 / .6); }
 dialog h2 { margin-bottom: .75rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
 .actions .push { margin-left: auto; }
+.actions.tight { margin: .5rem 0 .4rem; }
 
 @media (max-width: 40rem) {
   main { padding: 1.25rem 1rem 3rem; }
@@ -348,12 +349,22 @@ input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0
 input.cell.reached { background: var(--input-cell-reached); }
 /* "+" nella colonna Progr.: apre il Giornale con la registrazione compilata */
 table.grid td.a a.add {
-  float: left; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-right: .4rem;
+  display: inline-grid; place-items: center; vertical-align: middle; width: 1.3rem; height: 1.3rem; margin-right: .4rem;
   border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; line-height: 1; text-decoration: none;
 }
 table.grid td.a a.add:hover { background: var(--accent); color: var(--on-accent); }
 table.grid td.a a.add:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
 table.grid td.a a.add[hidden] { display: none; }
+/* "=" nella colonna Scost.: porta il budget del mese al consuntivo */
+table.grid td.s button.eq {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-grid; place-items: center; vertical-align: middle;
+  width: 1.3rem; height: 1.3rem; margin-right: .4rem; border-radius: 50%;
+  background: var(--surface-muted); color: var(--ink); font-weight: 700; line-height: 1;
+}
+table.grid td.s button.eq:hover { background: var(--accent); color: var(--on-accent); }
+table.grid td.s button.eq:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+table.grid td.s button.eq[hidden] { display: none; }
+#msg button.link { color: var(--accent-text); font-weight: 600; }
 /* vuota (placeholder di uno spazio): grigia; mentre ci scrivi torna gialla */
 input.cell:placeholder-shown:not(:focus) { background: var(--input-cell-empty); }
 input.cell.saving { background: var(--input-cell-saving); }

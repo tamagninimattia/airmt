@@ -4,7 +4,7 @@ import { year2027, PROVA_GIORNALE } from './fixture-2027.js';
 import { E } from './expected-2027.js';
 import { EXCEL_2027 as X } from './excel-2027.js';
 import { computeActual, computeBudget, suggestAdjustments, spreadTotal } from '../js/engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill } from '../js/budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual } from '../js/budget-model.js';
 
 function grid(data, opts) {
   const result = { actual: computeActual(data), budget: computeBudget(data) };
@@ -102,4 +102,15 @@ test('«+» dal Budget al Giornale: importo che manca, solo righe con budget man
   ok(journalPrefill(fin, 2027, 1).href.endsWith('#/giornale/2027-01?causale=c1&importo=10.00'.slice(1)), 'causale finanziaria');
   eq(journalPrefill({ ...voce, edit: null }, 2027, 1), null, 'riga calcolata');
   eq(journalPrefill({ ...voce, type: 'var', edit: { table: 'channel_adjustments', id: 'c1' } }, 2027, 1), null, 'riga Var');
+});
+
+test('«=» porta il budget del mese al consuntivo', () => {
+  const row = { type: 'line', edit: { table: 'budget_accounts', id: 'v1' },
+                budget: [100, 90, 50, ...new Array(9).fill(0)], actual: [90, 100, 0, ...new Array(9).fill(0)] };
+  eq(alignToActual(row, 1, 3), { from: 100, to: 90 }, 'budget sopra il consuntivo');
+  eq(alignToActual(row, 2, 3), { from: 90, to: 100 }, 'budget sotto il consuntivo');
+  eq(alignToActual(row, 3, 3), { from: 50, to: 0 }, 'non arriva più nulla: budget a zero');
+  eq(alignToActual(row, 4, 3), null, 'mese futuro');
+  eq(alignToActual({ ...row, actual: row.budget }, 1, 3), null, 'già allineato');
+  eq(alignToActual({ ...row, edit: null }, 1, 3), null, 'riga calcolata');
 });

@@ -6,7 +6,7 @@ import { E } from './expected-2027.js';
 import { round2 } from '../js/format.js';
 import { computeActual, computeBudget, suggestAdjustments } from '../js/engine/year.js';
 import { alignmentByMonth } from '../js/budget-model.js';
-import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings } from '../js/closing-model.js';
+import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows } from '../js/closing-model.js';
 import { cardRows } from '../js/accounts-model.js';
 
 const result = (data) => ({ actual: computeActual(data), budget: computeBudget(data) });
@@ -91,4 +91,23 @@ test('scheda conto: saldo per controllo e differenza nella colonna Progr.', () =
   eq(rows.get('control-diff').actual.slice(0, 2), [-3.55, null], 'differenza');
   eq(rows.get('control').budget, null, 'nessun budget');
   ok(!new Map(cardRows(data, result(data), 'Paypal').map((r) => [r.key, r])).has('control'), 'righe solo se ci sono saldi reali');
+});
+
+test('allinea tutto il budget del mese al consuntivo', () => {
+  const data = year2027({ entries: PROVA_GIORNALE });
+  const c = monthChecks(data, result(data), 1);
+  const out = alignMonthRows(c.budgetDiffs, 'u1', 2027, 1);
+  const manual = c.budgetDiffs.filter((d) => d.edit);
+  eq(out.budget_accounts.length + out.budget_causali.length, manual.length, 'una riga per voce manuale');
+  ok(!out.budget_causali.some((r) => r.causale_id === 'GCCCRED'), 'causali calcolate escluse');
+  eq(out.budget_causali.find((r) => r.causale_id === 'PREFIN')?.amount, 0, 'prelievo non registrato: budget a 0');
+  // applicate al budget, restano diverse solo le causali calcolate (si sistemano con canali e Var)
+  for (const [table, list] of [['budget_accounts', 'budgetAccounts'], ['budget_causali', 'budgetCausali']]) {
+    const key = table === 'budget_accounts' ? 'account_id' : 'causale_id';
+    for (const r of out[table]) {
+      data[list] = data[list].filter((x) => !(x.month === 1 && x[key] === r[key]));
+      data[list].push({ month: 1, [key]: r[key], amount: r.amount });
+    }
+  }
+  eq(monthChecks(data, result(data), 1).budgetDiffs.filter((d) => d.edit), [], 'voci manuali allineate');
 });

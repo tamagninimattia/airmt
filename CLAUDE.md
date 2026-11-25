@@ -76,6 +76,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Righe a zero (budget, Progr. e Var tutti a 0 nell'anno) nascoste, comprese le voci attive e le causali calcolate; si vedono con "Mostra anche le righe a zero", che serve anche per scrivere il budget di una voce nuova (deciso con Mattia).
 - Le celle da digitare hanno sfondo giallo `#FFFF99` con testo scuro, grigio `#BFBFBF` se sono vuote; diventano verdi `#99FFCC` quando il consuntivo del mese è uguale a un budget diverso da zero (scostamento 0: budget raggiunto). Deciso con Mattia.
 - "+" dal Budget al Giornale (deciso con Mattia): nei mesi esplosi, nella colonna Progr. delle righe con budget manuale (voci economiche e causali finanziarie; non le calcolate, gli imprevisti e le Var), compare se al budget del mese manca ancora qualcosa. Apre `#/giornale/<anno-mese>?voce=<id>` (o `?causale=<id>`) `&importo=<budget − consuntivo>`: il Giornale compila causale (il canale standard della voce), conto e importo, lascia vuote data e note e toglie la richiesta dall'indirizzo (`journalPrefill`, `prefillFromQuery`).
+- "=" nella colonna Scost. (deciso con Mattia): stesse righe del "+", nei mesi fino al corrente, quando budget e consuntivo differiscono; porta il budget del mese al consuntivo (anche a 0: "non arriva più nulla"), subito, con "Annulla" nel messaggio (`alignToActual`). La differenza passa agli imprevisti dei mesi aperti.
 - Scorciatoie: "copia su tutti i mesi" e "dividi il totale annuo" (il resto dell'arrotondamento va sull'ultimo mese; i mesi chiusi restano invariati se si lascia la spunta).
 - Mese corrente del Budget = primo mese non chiuso (quello dopo l'ultimo chiuso).
 - Scostamento: positivo = favorevole, sia per ricavi che per costi (ricavi: Progr. − Budget; costi: Budget − Progr.). Nelle griglie i favorevoli sono verdi e gli sfavorevoli rossi (deciso con Mattia). Per le causali finanziarie vale come per i costi: Budget − Progr. (deciso con Mattia).
@@ -102,9 +103,9 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 ## Chiusura del mese e dell'anno
 
 - Chiudere un mese imposta solo `months.closed`: non blocca le registrazioni e si può riaprire.
-- Prima di chiudere, Mattia allinea da solo il budget del mese al consuntivo. L'app non lo riscrive e non conserva il budget originale.
+- Prima di chiudere, Mattia allinea il budget del mese al consuntivo: a mano, voce per voce con "=" nel Budget o tutto insieme dalle Chiusure. L'app lo riscrive solo su sua richiesta e non conserva il budget originale.
 - `init_year(anno)` crea l'anno e prende i saldi iniziali dai saldi finali di dicembre dell'anno prima. Finché l'anno è in `bozza` i saldi iniziali restano modificabili.
-- Vista Chiusure (`#/chiusure/anno/mese`): per il mese scelto, controlli prima della chiusura (voci e causali finanziarie con budget diverso dal consuntivo, Var da allineare, quadratura, riconciliazione) che avvisano ma non bloccano; "Chiudi mese" / "Riapri mese" con conferma.
+- Vista Chiusure (`#/chiusure/anno/mese`): per il mese scelto, controlli prima della chiusura (voci e causali finanziarie con budget diverso dal consuntivo, Var da allineare, quadratura, riconciliazione) che avvisano ma non bloccano; "Chiudi mese" / "Riapri mese" con conferma. Il pulsante "Allinea il budget al consuntivo" fa lo stesso per tutte le voci manuali del mese, con conferma che elenca le voci e l'effetto sugli imprevisti (`alignMonthRows`); le causali calcolate si sistemano da sole.
 - L'anno si chiude (`years.status = 'chiuso'`) solo con tutti i 12 mesi chiusi, e si può riaprire.
 - Anno dopo: si crea con `init_year`; se esiste ed è in bozza, un pulsante riallinea i suoi saldi iniziali ai saldi finali reali di dicembre (per le registrazioni arrivate dopo la creazione).
 

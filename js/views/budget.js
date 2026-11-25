@@ -1,10 +1,10 @@
 // Budget a griglia: 12 mesi (Budget, Progr., Scost.), Var +/- con allineamento, scorciatoie di riga.
 // Pensato per il desktop. Le celle si salvano da sole quando escono dal fuoco o con Invio.
 import { sb, rows as query } from '../db.js';
-import { h, say, clearMsg, noYear } from '../ui.js';
+import { $, h, say, clearMsg, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget, budgetSummary, suggestAdjustments, spreadTotal } from '../engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill } from '../budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual } from '../budget-model.js';
 import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached } from '../grid.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
 
@@ -115,10 +115,15 @@ function rowEl(row, ncols) {
     }
     if (S.expanded.has(m)) {
       // righe con budget manuale: "+" che apre il Giornale con la registrazione già compilata
-      reg.actual[m] = row.edit && row.type === 'line'
+      // e "=" che porta il budget del mese al consuntivo
+      const manual = row.edit && row.type === 'line';
+      reg.actual[m] = manual
         ? h('td', { class: 'num a' }, h('a', { class: 'add', hidden: true }, '+'), h('span', { class: 'v' }))
         : h('td', { class: 'num a' });
-      reg.scost[m] = h('td', { class: 'num s' });
+      reg.scost[m] = manual
+        ? h('td', { class: 'num s' }, h('button', { type: 'button', class: 'eq', hidden: true,
+                                                   onclick: () => alignCell(row, m) }, '='), h('span', { class: 'v' }))
+        : h('td', { class: 'num s' });
       cells.push(reg.actual[m], reg.scost[m]);
     }
   }
@@ -156,6 +161,16 @@ function update() {
       if (reg.actual[m]) {
         const a = row.actual?.[m];
         setNum(reg.actual[m], a ?? null, row);
+        const eqBtn = reg.scost[m].querySelector(':scope > button.eq');
+        if (eqBtn) {
+          const x = alignToActual(row, m + 1, S.cur);
+          eqBtn.hidden = !x;
+          if (x) {
+            const label = `Porta il budget di ${row.label}, ${MONTHS[m]}, da ${fmtAmount(x.from)} a ${fmtAmount(x.to)} (il consuntivo)`;
+            eqBtn.title = label;
+            eqBtn.setAttribute('aria-label', label);
+          }
+        }
         const add = reg.actual[m].querySelector(':scope > a.add');
         if (add) {
           const p = journalPrefill(row, S.data.year, m + 1);
@@ -267,6 +282,21 @@ async function apply(changes, inputs = []) {
   } finally {
     inputs.forEach((i) => i.classList.remove('saving'));
   }
+}
+
+// "=": il budget del mese prende il valore del consuntivo, con "Annulla" nel messaggio
+async function alignCell(row, m) {
+  const x = alignToActual(row, m + 1, S.cur);
+  if (!x) return;
+  const where = `«${row.label}», ${MONTHS[m]}`;
+  if (!await apply([{ edit: row.edit, m, amount: x.to }])) return;
+  say(`Budget di ${where}: da ${fmtAmount(x.from)} a ${fmtAmount(x.to)}. `);
+  const undo = h('button', { type: 'button', class: 'link' }, 'Annulla');
+  undo.addEventListener('click', async () => {
+    undo.disabled = true;
+    if (await apply([{ edit: row.edit, m, amount: x.from }])) say(`Budget di ${where} riportato a ${fmtAmount(x.from)}.`);
+  });
+  $('msg').append(undo);
 }
 
 function commit(row, m, input) {

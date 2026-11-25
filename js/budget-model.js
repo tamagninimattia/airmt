@@ -124,6 +124,15 @@ export function journalPrefill(row, year, month) {
   return { amount: missing, href: `#/giornale/${year}-${String(month).padStart(2, '0')}?${q}` };
 }
 
+// Pulsante "=": porta il budget del mese (1–12) al consuntivo, anche a zero ("non arriva più nulla").
+// Stesse righe del "+"; solo fino al mese corrente (cur), perché nei mesi futuri il consuntivo non c'è ancora.
+export function alignToActual(row, month, cur) {
+  if (row.type !== 'line' || !row.edit || month > cur) return null;
+  const from = row.budget?.[month - 1] ?? 0;
+  const to = round2(row.actual?.[month - 1] ?? 0);
+  return round2(from - to) !== 0 ? { from, to } : null;
+}
+
 export function rowTotal(row, series) {
   if (!series || row.total === 'none') return null;
   if (row.total === 'last') return series[11];
