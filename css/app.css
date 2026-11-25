@@ -33,6 +33,7 @@
   --prov-bg: rgb(180 189 250 / .08);
   --input-cell: #ffff99;             /* celle da digitare del Budget (deciso con Mattia) */
   --input-cell-saving: #ebeb7a;
+  --input-cell-reached: #99ee99;      /* budget raggiunto: consuntivo = budget (deciso con Mattia) */
   --on-input-cell: #1f1e1d;
   --on-input-cell-error: #b3261e;
   --c-actual: #3987e5;                /* grafici: palette validata per lo sfondo scuro */
@@ -342,6 +343,7 @@ input.cell {
 }
 input.cell:hover { border-color: var(--warn); }
 input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
+input.cell.reached { background: var(--input-cell-reached); }
 input.cell.saving { background: var(--input-cell-saving); }
 input.cell[aria-invalid=true] { border-color: var(--on-input-cell-error); box-shadow: 0 0 0 2px var(--error); }
 button.align { all: unset; cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 999px; padding: 0 .5rem; }

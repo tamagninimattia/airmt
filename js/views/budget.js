@@ -5,7 +5,7 @@ import { h, say, clearMsg, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget, budgetSummary, suggestAdjustments, spreadTotal } from '../engine/year.js';
 import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName } from '../budget-model.js';
-import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance } from '../grid.js';
+import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached } from '../grid.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
 
 // Dove sta, nei dati caricati, ogni tabella di budget modificabile
@@ -147,6 +147,7 @@ function update() {
       if (row.type === 'count') fillCount(cell, m, b);
       else if (cell.tagName === 'INPUT') {
         if (document.activeElement !== cell && cell.getAttribute('aria-invalid') !== 'true') cell.value = b ? fmtAmount(b) : '';
+        cell.classList.toggle('reached', budgetReached(row, b, row.actual?.[m] ?? null));
       } else setNum(cell, b, row);
       if (reg.actual[m]) {
         const a = row.actual?.[m];

@@ -59,6 +59,10 @@ export function setNum(td, v, row, { scost = false } = {}) {
 // Scostamento di una cella, null se la riga non lo prevede
 export const cellVariance = (row, b, a) => (a == null || b == null || !row.kind ? null : variance(row.kind, b, a));
 
+// Budget raggiunto: il consuntivo coincide con un budget diverso da zero (scostamento 0).
+// Nel Budget la cella da digitare passa da gialla a verde.
+export const budgetReached = (row, b, a) => Boolean(b && cellVariance(row, b, a) === 0);
+
 // Griglia in sola lettura. rows: { key, type, label, code?, href?, kind?, budget, actual?, total, negRed?, badge? }
 // type: 'head' | 'sub' | 'line' | 'total' | 'check'
 export function readGrid({ rows, expanded, cur, closed, onToggle, label }) {
