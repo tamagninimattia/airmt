@@ -24,28 +24,14 @@ async function defaultRoute() {
   return window.matchMedia('(min-width: 900px)').matches ? 'dashboard' : 'giornale';
 }
 
-// Logo animato del menu laterale. Parte solo dove il menu è una colonna fissa (sul telefono il logo
-// grande non si vede e il video non si scarica) e mai con "riduci movimento": lì resta il poster.
-// Gli ultimi istanti del video sono neri: invece del loop del browser si riparte un attimo prima
-// della fine, controllando fotogramma per fotogramma.
+// Logo animato del menu laterale (loop continuo: l'ultimo fotogramma si raccorda con il primo).
+// Parte solo dove il menu è una colonna fissa (sul telefono il logo grande non si vede e il video
+// non si scarica) e mai con "riduci movimento": lì resta il poster, che è il primo fotogramma.
 function setupLogoVideo() {
   const v = $('logo-video');
   if (!v) return;
   const wide = window.matchMedia('(min-width: 56.01rem)');
   const still = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const restart = () => { v.currentTime = 0; };
-
-  // preciso: a ogni fotogramma, 0,3 s prima della fine (dove il browser lo supporta)
-  if ('requestVideoFrameCallback' in v) {
-    const tick = (_, meta) => {
-      if (v.duration && meta.mediaTime >= v.duration - 0.3) restart();
-      v.requestVideoFrameCallback(tick);
-    };
-    v.requestVideoFrameCallback(tick);
-  }
-  // rete di sicurezza: timeupdate arriva ogni ~250 ms, quindi un margine più largo
-  v.addEventListener('timeupdate', () => { if (v.duration && v.currentTime >= v.duration - 0.5) restart(); });
-  v.loop = true;   // ultima risorsa: il video non si ferma mai
 
   const sync = () => {
     if (wide.matches && !still.matches) {
