@@ -4,6 +4,7 @@ import { sb, rows } from '../db.js';
 import { h, say, clearMsg, confirmBox, promptBox } from '../ui.js';
 import * as J from '../journal-model.js';
 import { sortByOrder, groupBy } from '../settings-model.js';
+import { importCard } from '../import-view.js';
 import { fmtAmount, fmtDay, parseAmount, isoDate, monthLabel } from '../format.js';
 
 const KIND_GROUPS = [
@@ -55,9 +56,12 @@ export async function render(root, { params, query = new URLSearchParams() }) {
       ctx.summary,
       h('h2', null, 'Registrazioni del mese'),
       ctx.list),
-    h('aside', { class: 'journal-side card', 'aria-labelledby': 'fav-title' },
-      h('h2', { id: 'fav-title' }, 'Preferiti'),
-      ctx.favList)));
+    h('aside', { class: 'journal-side' },
+      h('section', { class: 'card', 'aria-labelledby': 'fav-title' },
+        h('h2', { id: 'fav-title' }, 'Preferiti'),
+        ctx.favList),
+      // caricamento del Giornale da Excel: dopo un'importazione si ricaricano le registrazioni
+      importCard({ accounts, causali, years: ctx.years }, () => Promise.all([loadEntries(ctx), loadMatured(ctx)])))));
 
   await Promise.all([loadEntries(ctx), loadMatured(ctx), loadFavorites(ctx)]);
 

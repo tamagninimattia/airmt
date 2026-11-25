@@ -224,13 +224,14 @@ dl.totals dd.strong { font-weight: 600; }
 /* Giornale: una colonna, pensato per il telefono; sugli schermi larghi a destra i preferiti */
 .journal { max-width: 34rem; }
 .journal-cols { display: grid; gap: 1.5rem; }
-.journal-side p { margin: 0; }
+.journal-side { display: grid; gap: 1rem; align-content: start; }
+.journal-side .card > p { margin: 0; }
 @media (min-width: 64rem) {
   main:has(.journal-cols) { max-width: 96rem; }
   .journal-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
   .journal-cols .journal { max-width: none; }
   .journal-cols .alert-summary { max-width: none; }
-  .journal-side { margin-top: 6.4rem; position: sticky; top: 1rem; }
+  .journal-side { margin-top: 6.4rem; }
 }
 .month-nav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .5rem 0 1rem; font-weight: 600; text-transform: capitalize; }
 .month-nav a {
@@ -550,3 +551,21 @@ table.grid tr.head th .name, table.grid tr.sub th .name { max-width: none; }
 .back { margin: 0 0 .5rem; font-size: .9rem; }
 .back a { color: var(--accent-text); text-decoration: none; }
 .back a:hover { text-decoration: underline; }
+
+/* Importa da Excel (Giornale): zona per trascinare il file ed elenco delle importazioni */
+.journal-side .import-card > .hint { margin: 0 0 .75rem; }
+.import-card h3 { font-size: .95rem; margin: 1.1rem 0 .4rem; }
+.drop {
+  display: grid; place-items: center; gap: .2rem; padding: 1.4rem 1rem; text-align: center; cursor: pointer;
+  border: 2px dashed var(--field-border); border-radius: 10px; background: var(--surface-2); color: var(--muted);
+}
+.drop strong { color: var(--ink); }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.drop.busy { opacity: .6; cursor: progress; }
+.imports ul { list-style: none; margin: 0; padding: 0; }
+.imports li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .45rem 0; border-top: 1px solid var(--line-soft); }
+.imports li strong { display: block; font-weight: 500; overflow-wrap: anywhere; }
+.imports li small { color: var(--muted); }
+table.map-table select { min-width: 14rem; }
+table.list tr.dup td { color: var(--warn-ink); }

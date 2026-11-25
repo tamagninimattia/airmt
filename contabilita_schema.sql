@@ -176,6 +176,18 @@ create table if not exists favorites (
 );
 create index if not exists favorites_user_idx on favorites (user_id);
 
+-- Importazioni del Giornale da Excel: ogni caricamento ha una riga qui e le sue registrazioni
+-- puntano a lei. Eliminare l'importazione elimina le sue registrazioni ("Annulla importazione").
+create table if not exists imports (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  label      text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists imports_user_idx on imports (user_id);
+alter table entries add column if not exists import_id uuid references imports(id) on delete cascade;
+create index if not exists entries_import_idx on entries (import_id);
+
 
 -- ---------------------------------------------------------------------
 -- 2. SICUREZZA (RLS): ogni utente vede e scrive solo le proprie righe
@@ -237,6 +249,12 @@ create policy "own rows" on channel_adjustments for all to authenticated
 alter table reconciliations enable row level security;
 drop policy if exists "own rows" on reconciliations;
 create policy "own rows" on reconciliations for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+alter table imports enable row level security;
+drop policy if exists "own rows" on imports;
+create policy "own rows" on imports for all to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
