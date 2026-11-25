@@ -43,7 +43,10 @@ async function route() {
   }
   $('who').textContent = session.user.email;
 
-  const [name, ...params] = location.hash.replace(/^#\/?/, '').split('/');
+  // #/vista/parametri?chiave=valore: la parte dopo ? arriva alla vista come query
+  const [path, qs = ''] = location.hash.replace(/^#\/?/, '').split('?');
+  const [name, ...params] = path.split('/');
+  const query = new URLSearchParams(qs);
   // indirizzo vecchio delle schede conto: si passa al Partitario con gli stessi parametri
   if (name === 'schede') {
     location.replace(['#/partitario', ...params].join('/'));
@@ -65,7 +68,7 @@ async function route() {
       }
       else a.removeAttribute('aria-current');
     }
-    await routes[name].render(view, { session, params });
+    await routes[name].render(view, { session, params, query });
   } catch (e) {
     view.replaceChildren();
     say('Non riesco a leggere i dati: ' + e.message + '. Controlla di aver eseguito lo script SQL.', true);

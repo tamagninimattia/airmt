@@ -4,7 +4,7 @@ import { sb, rows as query } from '../db.js';
 import { h, say, clearMsg, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget, budgetSummary, suggestAdjustments, spreadTotal } from '../engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName } from '../budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill } from '../budget-model.js';
 import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached } from '../grid.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
 
@@ -114,7 +114,10 @@ function rowEl(row, ncols) {
       cells.push(reg.budget[m]);
     }
     if (S.expanded.has(m)) {
-      reg.actual[m] = h('td', { class: 'num a' });
+      // righe con budget manuale: "+" che apre il Giornale con la registrazione già compilata
+      reg.actual[m] = row.edit && row.type === 'line'
+        ? h('td', { class: 'num a' }, h('a', { class: 'add', hidden: true }, '+'), h('span', { class: 'v' }))
+        : h('td', { class: 'num a' });
       reg.scost[m] = h('td', { class: 'num s' });
       cells.push(reg.actual[m], reg.scost[m]);
     }
@@ -153,6 +156,17 @@ function update() {
       if (reg.actual[m]) {
         const a = row.actual?.[m];
         setNum(reg.actual[m], a ?? null, row);
+        const add = reg.actual[m].querySelector(':scope > a.add');
+        if (add) {
+          const p = journalPrefill(row, S.data.year, m + 1);
+          add.hidden = !p;
+          if (p) {
+            const label = `Registra nel Giornale ${row.label}, ${MONTHS[m]}: mancano ${fmtAmount(p.amount)} €`;
+            add.href = p.href;
+            add.title = label;
+            add.setAttribute('aria-label', label);
+          }
+        }
         setNum(reg.scost[m], cellVariance(row, b, a ?? null), row, { scost: true });
       }
     }

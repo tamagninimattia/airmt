@@ -4,7 +4,7 @@ import { year2027, PROVA_GIORNALE } from './fixture-2027.js';
 import { E } from './expected-2027.js';
 import { EXCEL_2027 as X } from './excel-2027.js';
 import { computeActual, computeBudget, suggestAdjustments, spreadTotal } from '../js/engine/year.js';
-import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName } from '../js/budget-model.js';
+import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill } from '../js/budget-model.js';
 
 function grid(data, opts) {
   const result = { actual: computeActual(data), budget: computeBudget(data) };
@@ -87,4 +87,19 @@ test('Var da allineare: contate solo fino al mese corrente', () => {
   eq(upToMay.counts[4], 2, 'maggio: COSFIN e COSCCRED');
   const rows = byKey(grid(data, { alignCounts: upToMarch.counts }));
   eq(rows.get('var-count').budget[0], 4, 'riga del contatore');
+});
+
+test('«+» dal Budget al Giornale: importo che manca, solo righe con budget manuale', () => {
+  const budget = [10, 10, 0, ...new Array(9).fill(0)];
+  const voce = { type: 'line', edit: { table: 'budget_accounts', id: 'v1' }, budget, actual: [0, 4, 0, ...new Array(9).fill(0)] };
+  eq(journalPrefill(voce, 2027, 1), { amount: 10, href: '#/giornale/2027-01?voce=v1&importo=10.00' }, 'niente registrato');
+  eq(journalPrefill(voce, 2027, 2).amount, 6, 'ne manca una parte');
+  eq(journalPrefill({ ...voce, actual: [10, 12, ...new Array(10).fill(0)] }, 2027, 1), null, 'budget raggiunto');
+  eq(journalPrefill({ ...voce, actual: [10, 12, ...new Array(10).fill(0)] }, 2027, 2), null, 'budget superato');
+  eq(journalPrefill(voce, 2027, 3), null, 'budget a zero');
+  const fin = { type: 'line', edit: { table: 'budget_causali', id: 'c1' }, budget, actual: new Array(12).fill(0) };
+  eq(journalPrefill(fin, 2027, 12), null, 'dicembre senza budget');
+  ok(journalPrefill(fin, 2027, 1).href.endsWith('#/giornale/2027-01?causale=c1&importo=10.00'.slice(1)), 'causale finanziaria');
+  eq(journalPrefill({ ...voce, edit: null }, 2027, 1), null, 'riga calcolata');
+  eq(journalPrefill({ ...voce, type: 'var', edit: { table: 'channel_adjustments', id: 'c1' } }, 2027, 1), null, 'riga Var');
 });

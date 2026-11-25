@@ -12,7 +12,7 @@ const KIND_GROUPS = [
   { kind: 'finanziaria', label: 'Finanziarie' }
 ];
 
-export async function render(root, { params }) {
+export async function render(root, { params, query = new URLSearchParams() }) {
   const [accounts, causali, years, months] = await Promise.all([
     rows(sb.from('accounts').select('*')),
     rows(sb.from('causali').select('*')),
@@ -60,6 +60,15 @@ export async function render(root, { params }) {
       ctx.favList)));
 
   await Promise.all([loadEntries(ctx), loadMatured(ctx), loadFavorites(ctx)]);
+
+  // arrivo dal "+" del Budget: si compila il form e si toglie la richiesta dall'indirizzo,
+  // così ricaricando la pagina non si ricompila (replaceState non fa scattare il router)
+  if ([...query.keys()].length) {
+    history.replaceState(null, '', '#/giornale/' + J.monthParam(view));
+    const p = J.prefillFromQuery(query, accounts, causali);
+    if (p) ctx.form.applyPrefill(p);
+    else say('Non trovo la voce da registrare: forse è stata eliminata. Compila la registrazione a mano.', true);
+  }
 }
 
 async function loadEntries(ctx) {
@@ -169,7 +178,7 @@ async function manageFavorite(ctx, f) {
   }
 }
 
-// Form di inserimento e modifica. Restituisce { el, edit(entry), applyFavorite(fav), editingId() }.
+// Form di inserimento e modifica. Restituisce { el, edit(entry), applyFavorite(fav), applyPrefill(p), editingId() }.
 function entryForm(ctx) {
   let editing = null;
 
@@ -234,7 +243,8 @@ function entryForm(ctx) {
     provHint.hidden = !provisional.checked;
   }
 
-  causaleSel.addEventListener('change', () => sync());
+  let pendingAccount = null;   // conto arrivato dal Budget per una voce senza canale standard
+  causaleSel.addEventListener('change', () => sync(pendingAccount));
   accountSel.addEventListener('change', syncAlert);
   date.addEventListener('change', syncAlert);
   provisional.addEventListener('change', syncAlert);
@@ -251,6 +261,7 @@ function entryForm(ctx) {
   function reset(full) {
     const keep = !full && !editing ? { causale: causaleSel.value, date: date.value } : null;
     editing = null;
+    pendingAccount = null;
     fillCausali();
     causaleSel.value = keep?.causale ?? '';
     date.value = keep?.date || J.defaultDate(ctx.view, ctx.today);
@@ -265,6 +276,7 @@ function entryForm(ctx) {
 
   function edit(e) {
     editing = e;
+    pendingAccount = null;
     fillCausali(e.causale_id);
     causaleSel.value = e.causale_id;
     accountSel.value = '';
@@ -280,23 +292,37 @@ function entryForm(ctx) {
     amount.focus({ preventScroll: true });
   }
 
-  // Preferito: causale, conto, importo e note come salvati; la data è sempre oggi
-  function applyFavorite(f) {
+  // Nuova registrazione già compilata (preferiti e "+" del Budget). Se la causale manca,
+  // il conto resta in attesa e si seleziona appena la si sceglie.
+  function fill({ causaleId, accountId, amount: value, note: text, date: day }) {
     editing = null;
-    fillCausali(f.causale_id);
-    causaleSel.value = ctx.causale(f.causale_id) ? f.causale_id : '';
+    pendingAccount = causaleId ? null : accountId;
+    fillCausali(causaleId);
+    causaleSel.value = ctx.causale(causaleId) ? causaleId : '';
     accountSel.value = '';
-    sync(f.economic_account_id);
-    date.value = ctx.today;
-    amount.value = f.amount != null ? fmtAmount(Number(f.amount)) : '';
-    note.value = f.note || '';
+    sync(accountId);
+    date.value = day;
+    amount.value = value != null ? fmtAmount(Number(value)) : '';
+    note.value = text || '';
     provisional.checked = false;
     setMode(false);
     syncAlert();
     if (ctx.entries.length) drawList(ctx);
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Preferito: causale, conto, importo e note come salvati; la data è sempre oggi
+  function applyFavorite(f) {
+    fill({ causaleId: f.causale_id, accountId: f.economic_account_id, amount: f.amount, note: f.note, date: ctx.today });
     (amount.value ? save : amount).focus({ preventScroll: true });
     say('Compilata da «' + f.name + '»: controlla e premi Registra.');
+  }
+
+  // Dal "+" del Budget: voce (o causale finanziaria) e importo che manca; data e note da compilare
+  function applyPrefill(p) {
+    fill({ causaleId: p.causale?.id ?? null, accountId: p.account?.id ?? null, amount: p.amount, note: '', date: '' });
+    (p.causale ? date : causaleSel).focus({ preventScroll: true });
+    say(p.warning ?? 'Compilata dal Budget: scegli la data e premi Registra.', Boolean(p.warning));
   }
 
   async function saveFavorite() {
@@ -394,7 +420,7 @@ function entryForm(ctx) {
     h('div', { class: 'actions' }, save, cancel, del));
 
   reset(true);
-  return { el, edit, applyFavorite, editingId: () => editing?.id };
+  return { el, edit, applyFavorite, applyPrefill, editingId: () => editing?.id };
 }
 
 // Stella dei preferiti: simbolo SVG di index.html

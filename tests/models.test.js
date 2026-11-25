@@ -116,3 +116,22 @@ test('giornale: preferiti', () => {
   eq(J.favoriteName(cos, voce), 'Voce di costo');
   eq(J.favoriteName(fin, null), 'Prelievo');
 });
+
+test('giornale: registrazione proposta dal Budget', () => {
+  const accounts = [
+    { id: 'v', name: 'Voce', type: 'economico', kind: 'costo', standard_causale_id: 'COSCCRED' },
+    { id: 'n', name: 'Senza canale', type: 'economico', kind: 'costo', standard_causale_id: null },
+    { id: 'p', name: 'Conto', type: 'patrimoniale' }
+  ];
+  const causali = [{ id: 'COSCCRED', kind: 'costo' }, { id: 'PREFIN', kind: 'finanziaria' }];
+  const q = (s) => new URLSearchParams(s);
+  const p = J.prefillFromQuery(q('voce=v&importo=10.00'), accounts, causali);
+  eq([p.causale.id, p.account.id, p.amount, p.warning], ['COSCCRED', 'v', 10, null], 'voce con canale standard');
+  const n = J.prefillFromQuery(q('voce=n&importo=4.5'), accounts, causali);
+  ok(n.causale === null && n.account.id === 'n' && /canale standard/.test(n.warning), 'voce senza canale');
+  const f = J.prefillFromQuery(q('causale=PREFIN&importo=250'), accounts, causali);
+  eq([f.causale.id, f.account, f.amount], ['PREFIN', null, 250], 'causale finanziaria');
+  eq(J.prefillFromQuery(q('voce=p'), accounts, causali), null, 'conto non economico');
+  eq(J.prefillFromQuery(q('causale=COSCCRED'), accounts, causali), null, 'solo causali finanziarie');
+  eq(J.prefillFromQuery(q('voce=v&importo=abc'), accounts, causali).amount, null, 'importo non valido');
+});

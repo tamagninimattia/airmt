@@ -111,6 +111,19 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
   return rows;
 }
 
+// Collegamento "+" dal Budget al Giornale per un mese (1–12): righe con budget manuale
+// (voci economiche e causali finanziarie, non le calcolate né le Var), solo se al budget
+// manca ancora qualcosa. Importo proposto = budget − consuntivo del mese.
+export function journalPrefill(row, year, month) {
+  if (row.type !== 'line' || !row.edit) return null;
+  const missing = round2((row.budget?.[month - 1] ?? 0) - (row.actual?.[month - 1] ?? 0));
+  if (!(missing > 0)) return null;
+  const key = row.edit.table === 'budget_accounts' ? 'voce' : row.edit.table === 'budget_causali' ? 'causale' : null;
+  if (!key) return null;
+  const q = new URLSearchParams({ [key]: row.edit.id, importo: missing.toFixed(2) });
+  return { amount: missing, href: `#/giornale/${year}-${String(month).padStart(2, '0')}?${q}` };
+}
+
 export function rowTotal(row, series) {
   if (!series || row.total === 'none') return null;
   if (row.total === 'last') return series[11];

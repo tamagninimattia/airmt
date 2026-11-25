@@ -322,6 +322,7 @@ table.grid th.month.closed button { color: var(--muted); }
 table.grid .tag { margin-left: .3rem; font-size: .72rem; color: var(--muted); }
 table.grid td.num { text-align: right; min-width: 5.5rem; }
 table.grid td.a { color: var(--muted); }
+table.grid td.s { padding-left: .9rem; }
 table.grid td.bad { color: var(--error); font-weight: 600; }
 table.grid td.good { color: var(--good); }
 table.grid td.calc { font-style: italic; color: var(--muted); }
@@ -345,6 +346,14 @@ input.cell {
 input.cell:hover { border-color: var(--warn); }
 input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
 input.cell.reached { background: var(--input-cell-reached); }
+/* "+" nella colonna Progr.: apre il Giornale con la registrazione compilata */
+table.grid td.a a.add {
+  float: left; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-right: .4rem;
+  border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; line-height: 1; text-decoration: none;
+}
+table.grid td.a a.add:hover { background: var(--accent); color: var(--on-accent); }
+table.grid td.a a.add:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+table.grid td.a a.add[hidden] { display: none; }
 /* vuota (placeholder di uno spazio): grigia; mentre ci scrivi torna gialla */
 input.cell:placeholder-shown:not(:focus) { background: var(--input-cell-empty); }
 input.cell.saving { background: var(--input-cell-saving); }

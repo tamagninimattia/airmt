@@ -120,5 +120,25 @@ export function buildFavorite(name, causale, accountId, amount, note) {
   };
 }
 
+// Registrazione proposta dal "+" del Budget (?voce=<conto> o ?causale=<finanziaria>, &importo=10.00).
+// Per una voce la causale è il suo canale standard; senza canale resta da scegliere (warning).
+// Restituisce null se i parametri non indicano niente di valido.
+export function prefillFromQuery(query, accounts, causali) {
+  const n = Number(query.get('importo'));
+  const amount = Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+  if (query.has('voce')) {
+    const account = accounts.find((a) => a.id === query.get('voce') && a.type === 'economico');
+    if (!account) return null;
+    const causale = causali.find((c) => c.id === account.standard_causale_id) ?? null;
+    return { causale, account, amount,
+             warning: causale ? null : `«${account.name}» non ha un canale standard: scegli tu la causale.` };
+  }
+  if (query.has('causale')) {
+    const causale = causali.find((c) => c.id === query.get('causale') && c.kind === 'finanziaria');
+    return causale ? { causale, account: null, amount, warning: null } : null;
+  }
+  return null;
+}
+
 // Nome proposto per un nuovo preferito: il conto economico, altrimenti la descrizione della causale
 export const favoriteName = (causale, account) => account?.name ?? causale?.description ?? '';
