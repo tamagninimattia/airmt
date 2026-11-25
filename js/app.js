@@ -24,6 +24,42 @@ async function defaultRoute() {
   return window.matchMedia('(min-width: 900px)').matches ? 'dashboard' : 'giornale';
 }
 
+// Logo animato del menu laterale. Parte solo dove il menu è una colonna fissa (sul telefono il logo
+// grande non si vede e il video non si scarica) e mai con "riduci movimento": lì resta il poster.
+// Gli ultimi istanti del video sono neri: invece del loop del browser si riparte un attimo prima
+// della fine, controllando fotogramma per fotogramma.
+function setupLogoVideo() {
+  const v = $('logo-video');
+  if (!v) return;
+  const wide = window.matchMedia('(min-width: 56.01rem)');
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const restart = () => { v.currentTime = 0; };
+
+  // preciso: a ogni fotogramma, 0,3 s prima della fine (dove il browser lo supporta)
+  if ('requestVideoFrameCallback' in v) {
+    const tick = (_, meta) => {
+      if (v.duration && meta.mediaTime >= v.duration - 0.3) restart();
+      v.requestVideoFrameCallback(tick);
+    };
+    v.requestVideoFrameCallback(tick);
+  }
+  // rete di sicurezza: timeupdate arriva ogni ~250 ms, quindi un margine più largo
+  v.addEventListener('timeupdate', () => { if (v.duration && v.currentTime >= v.duration - 0.5) restart(); });
+  v.loop = true;   // ultima risorsa: il video non si ferma mai
+
+  const sync = () => {
+    if (wide.matches && !still.matches) {
+      v.preload = 'auto';
+      v.play().catch(() => {});   // se il browser blocca l'avvio resta il poster
+    } else {
+      v.pause();
+    }
+  };
+  wide.addEventListener('change', sync);
+  still.addEventListener('change', sync);
+  sync();
+}
+
 // Sul telefono il menu laterale è un pannello che il pulsante ☰ apre e chiude
 function setMenu(open) {
   document.body.classList.toggle('menu-open', open);
@@ -82,6 +118,7 @@ if (!configured) {
     'Usa solo la chiave pubblica (anon), mai la ', h('code', null, 'service_role'), '.'));
 } else {
   window.addEventListener('hashchange', route);
+  setupLogoVideo();
   $('menu-btn').addEventListener('click', () => setMenu($('menu-btn').getAttribute('aria-expanded') !== 'true'));
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') setMenu(false); });
   $('side').addEventListener('click', (ev) => { if (ev.target.closest('a')) setMenu(false); });

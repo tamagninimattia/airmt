@@ -26,7 +26,8 @@
 
 <!-- menu laterale: colonna fissa sul desktop, pannello a tutto schermo sul telefono -->
 <aside class="side" id="side" hidden>
-  <a class="brand" href="#/"><img src="icons/icon-192.png?v=2" srcset="icons/icon-512.png?v=2 2x" alt="" width="192" height="192"> AirTM</a>
+  <!-- logo animato: parte solo dove il menu laterale è visibile e senza "riduci movimento" (js/app.js) -->
+  <a class="brand" href="#/"><video id="logo-video" class="logo" src="icons/buco_nero_aurora_v2.mp4?v=1" poster="icons/icon-512.png?v=2" muted playsinline preload="none" width="192" height="192" aria-hidden="true"></video> AirTM</a>
   <nav id="nav" aria-label="Sezioni">
     <a href="#/dashboard" data-route="dashboard"><svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg>Dashboard</a>
     <a href="#/giornale" data-route="giornale"><svg class="ico" aria-hidden="true"><use href="#i-giornale"/></svg>Giornale</a>
