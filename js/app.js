@@ -54,8 +54,10 @@ async function route() {
       location.replace('#/' + await defaultRoute()); // fa scattare di nuovo route()
       return;
     }
-    // l'Apertura anno non è nel menu: ci si arriva dalle Chiusure, che restano evidenziate
-    const navName = name === 'apertura' ? 'chiusure' : name;
+    // Voce del menu da evidenziare: le Impostazioni hanno una voce per scheda (senza scheda è la prima);
+    // l'Apertura anno non è nel menu, ci si arriva dalle Chiusure, che restano evidenziate
+    const navName = name === 'impostazioni' ? 'impostazioni/' + (params[0] || 'patrimoniali')
+      : name === 'apertura' ? 'chiusure' : name;
     for (const a of document.querySelectorAll('#nav a[data-route]')) {
       if (a.dataset.route === navName) {
         a.setAttribute('aria-current', 'page');

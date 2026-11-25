@@ -33,8 +33,11 @@
     <a href="#/budget" data-route="budget">Budget</a>
     <a href="#/partitario" data-route="partitario">Partitario</a>
     <a href="#/patrimonio" data-route="patrimonio">Patrimonio</a>
-    <a href="#/impostazioni" data-route="impostazioni">Impostazioni</a>
-    <div class="nav-sub" role="group" aria-label="Impostazioni">
+    <span class="nav-group" id="nav-settings">Impostazioni</span>
+    <div class="nav-sub" role="group" aria-labelledby="nav-settings">
+      <a href="#/impostazioni/patrimoniali" data-route="impostazioni/patrimoniali">Conti patrimoniali</a>
+      <a href="#/impostazioni/economici" data-route="impostazioni/economici">Conti economici</a>
+      <a href="#/impostazioni/causali" data-route="impostazioni/causali">Causali</a>
       <a href="#/chiusure" data-route="chiusure">Chiusure</a>
     </div>
   </nav>
