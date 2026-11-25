@@ -117,6 +117,8 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 
 ## Viste previste
 
+Dopo aver creato un conto patrimoniale si apre la finestra "Crea le causali" (deciso con Mattia), che si apre anche dal pulsante "Causali" sulla riga di ogni conto: costi e ricavi (COS/RIC+sigla), trasferimenti da e verso ogni altro conto (sigla+sigla), variazioni di crediti e debiti (ICRED/DCRE/IDEB/DDEB+sigla). Per le disponibilità sono spuntati costi, ricavi, crediti e debiti e i trasferimenti con il primo conto delle disponibilità; per gli altri gruppi niente. Le causali con gli stessi conti che esistono già non si ricreano (`accountAbbr`, `causaleProposals`, `validateProposals`).
+
 Menu laterale, in quest'ordine (deciso con Mattia): Dashboard, Giornale, Budget, Partitario (le schede conto), Patrimonio (situazione patrimoniale), poi il gruppo Impostazioni (titolo non cliccabile) con le sotto-schede rientrate Conti patrimoniali, Conti economici, Causali (`#/impostazioni/<scheda>`) e Chiusure. Avvio e Apertura anno non sono nel menu (deciso con Mattia): gli anni successivi si creano dalle Chiusure; l'Apertura anno (saldi iniziali, bozza/attivo) si apre dalle Chiusure ("Saldi iniziali del …") o dall'avviso della Dashboard quando l'anno è in bozza, e nel menu evidenzia Chiusure. Nelle Impostazioni si possono aggiungere, modificare ed eliminare conti e causali (con l'aggancio al budget). Budget soprattutto per desktop, Giornale per telefono. Nessuna importazione di estratti conto.
 
 - Dashboard: avvisi, numeri chiave al mese corrente, riepilogo annuale (budget anno, budget e consuntivo del periodo) con il target modificabile, andamento del patrimonio con il traguardo (patrimonio iniziale + target), costi per sezione e le 5 voci più sfavorevoli.

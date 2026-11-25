@@ -80,7 +80,13 @@ function drawPatrimoniali() {
       h('tr', { class: a.active ? null : 'inactive' },
         nameCell(a.name, a.active),
         h('td', { class: 'num' }, a.sort_order),
-        editButton(a.name, () => editAccount('patrimoniale', a))))));
+        h('td', { class: 'act' },
+          h('button', { type: 'button', class: 'quiet small', 'aria-label': 'Crea le causali di ' + a.name,
+                        title: 'Crea le causali di costo, ricavo e trasferimento di questo conto',
+                        onclick: () => openCausaliWizard(a) }, 'Causali'),
+          ' ',
+          h('button', { type: 'button', class: 'quiet small', 'aria-label': 'Modifica ' + a.name,
+                        onclick: () => editAccount('patrimoniale', a) }, 'Modifica'))))));
   }
   return out;
 }
@@ -162,7 +168,8 @@ function formValues(form, fallback = {}) {
 
 // Dialogo di modifica con Salva / Annulla / Elimina.
 // onSave(form, fail) e onDelete(fail) restituiscono true se hanno modificato i dati.
-function openEditor({ title, note, fields, onSave, onDelete }) {
+// after: chiamata dopo un salvataggio riuscito, a dati ricaricati (es. la finestra delle causali)
+function openEditor({ title, note, fields, onSave, onDelete, after }) {
   const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
   const save = h('button', { type: 'submit' }, 'Salva');
   const del = onDelete && h('button', { type: 'button', class: 'danger quiet push' }, 'Elimina');
@@ -196,9 +203,10 @@ function openEditor({ title, note, fields, onSave, onDelete }) {
     }
   }
 
-  form.addEventListener('submit', (ev) => {
+  form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    attempt(save, () => onSave(form, fail), 'Modifiche salvate.');
+    await attempt(save, () => onSave(form, fail), 'Modifiche salvate.');
+    if (!dlg.isConnected) after?.();
   });
   del?.addEventListener('click', () => attempt(del, () => onDelete(fail), 'Eliminazione completata.'));
   dlg.addEventListener('close', () => dlg.remove());
@@ -245,6 +253,7 @@ async function editAccount(type, a) {
       'Posizione nell\'elenco e nel Budget, dal più piccolo.'),
     checkbox('active', 'Attivo (compare nei menu del Giornale)', v.active));
 
+  let created = null;   // nuovo conto patrimoniale: dopo il salvataggio si propongono le sue causali
   openEditor({
     title: a ? 'Modifica «' + a.name + '»' : 'Nuovo conto ' + type,
     note: usage && M.usageSummary(usage),
@@ -254,9 +263,10 @@ async function editAccount(type, a) {
       const errors = M.validateAccount(rec, a?.id, state.accounts, state.causali);
       if (errors.length) return fail(errors.join(' '));
       if (a) await rows(sb.from('accounts').update(rec).eq('id', a.id));
-      else await rows(sb.from('accounts').insert(rec));
+      else created = await rows(sb.from('accounts').insert(rec).select().single());
       return true;
     },
+    after: () => { if (created?.type === 'patrimoniale') openCausaliWizard(created); },
     onDelete: a && (async (fail) => {
       const block = M.accountDeleteBlock(usage);
       if (block) return fail(block);
@@ -414,4 +424,106 @@ async function editCausale(c) {
       return true;
     })
   });
+}
+
+// ---------------------------------------------------------------------
+// Causali di un conto patrimoniale: costi, ricavi, trasferimenti, crediti e debiti
+// ---------------------------------------------------------------------
+
+function openCausaliWizard(account) {
+  const abbr = h('input', { id: 'cw-abbr', value: M.accountAbbr(account, state.causali), maxlength: 6,
+                            autocomplete: 'off', class: 'code', style: 'width: 7rem' });
+  const checked = new Map();          // key -> spunta scelta dall'utente (sopravvive al cambio di sigla)
+  const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
+  const body = h('div');
+  const create = h('button', { type: 'submit' });
+  let proposals = [];
+
+  const isOn = (p) => (checked.has(p.key) ? checked.get(p.key) : p.on);
+  const chosen = () => proposals.filter((p) => !p.existing && isOn(p));
+
+  function box(p, text) {
+    const cb = h('input', { type: 'checkbox', checked: Boolean(p.existing) || isOn(p), disabled: Boolean(p.existing),
+                            'aria-label': p.rec.code + ' · ' + p.rec.description });
+    cb.addEventListener('change', () => { checked.set(p.key, cb.checked); count(); });
+    return h('label', { class: 'check cw-item' + (p.existing ? ' muted' : '') }, cb, ' ',
+      h('code', null, p.existing || p.rec.code), ' ', text,
+      p.existing && h('span', { class: 'badge muted' }, 'esiste già'));
+  }
+
+  function count() {
+    const n = chosen().length;
+    create.textContent = n === 0 ? 'Nessuna causale da creare' : n === 1 ? 'Crea 1 causale' : `Crea ${n} causali`;
+    create.disabled = n === 0;
+  }
+
+  function paint() {
+    const a = abbr.value.trim().toUpperCase();
+    proposals = M.causaleProposals(account, a || '?', state.accounts, state.causali);
+    const by = (s) => proposals.filter((p) => p.section === s);
+    const transfers = by('trasferimenti');
+    const others = [...new Map(transfers.map((p) => [p.key.slice(p.key.indexOf(':') + 1), true])).keys()];
+    const find = (dir, id) => transfers.find((p) => p.key === dir + ':' + id);
+
+    // h() appiattisce le liste annidate, replaceChildren no: si passa da un contenitore
+    body.replaceChildren(h('div', null,
+      h('h3', null, 'Costi e ricavi'),
+      by('canale').map((p) => box(p, p.label)),
+      h('h3', null, 'Trasferimenti'),
+      others.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'list cw-table' },
+        h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Conto'),
+          h('th', { scope: 'col' }, 'da ' + account.name + ' a…'), h('th', { scope: 'col' }, 'da … a ' + account.name))),
+        h('tbody', null, others.map((id) => h('tr', null,
+          h('td', null, state.accounts.find((x) => x.id === id)?.name),
+          h('td', null, box(find('out', id), '')), h('td', null, box(find('in', id), '')))))))
+        : h('p', { class: 'muted' }, 'Non ci sono altri conti patrimoniali attivi.'),
+      by('crediti').length > 0 && [h('h3', null, 'Crediti e debiti'),
+        by('crediti').map((p) => box(p, p.label + ' via ' + account.name))]));
+    count();
+  }
+
+  abbr.addEventListener('input', () => { abbr.value = abbr.value.toUpperCase(); paint(); });
+
+  const form = h('form', { novalidate: true },
+    h('h2', null, 'Crea le causali per «' + account.name + '»'),
+    h('p', { class: 'hint' }, 'Spunta le causali da creare: Dare, Avere, descrizione e gruppo si compilano da soli. ' +
+      'Quelle che esistono già non si ricreano. Potrai sempre modificarle o aggiungerne altre dalle Causali.'),
+    h('div', { class: 'field' }, h('label', { for: 'cw-abbr' }, 'Sigla del conto'), abbr,
+      h('p', { class: 'hint' }, 'Serve per i codici: COS+sigla, RIC+sigla, sigla+sigla per i trasferimenti.')),
+    body,
+    error,
+    h('div', { class: 'actions' }, create,
+      h('button', { type: 'button', class: 'quiet', onclick: () => shut() }, 'Non ora')));
+  const dlg = h('dialog', { class: 'sheet wide' }, form);
+  const shut = () => { dlg.close(); dlg.remove(); };
+  dlg.addEventListener('close', () => dlg.remove());
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    error.hidden = true;
+    const list = chosen();
+    const errors = M.validateProposals(abbr.value.trim().toUpperCase(), list, state.causali);
+    if (errors.length) {
+      error.textContent = errors.join(' ');
+      error.hidden = false;
+      return;
+    }
+    create.disabled = true;
+    try {
+      let order = M.nextOrder(state.causali);
+      await rows(sb.from('causali').insert(list.map((p) => ({ ...p.rec, sort_order: order++ }))));
+      shut();
+      await reload();
+      say(`Create ${list.length} causali per «${account.name}»: ${list.map((p) => p.rec.code).join(', ')}.`);
+    } catch (e) {
+      error.textContent = 'Causali non create: ' + e.message + '.';
+      error.hidden = false;
+      create.disabled = false;
+    }
+  });
+
+  paint();
+  clearMsg();
+  document.body.append(dlg);
+  dlg.showModal();
 }

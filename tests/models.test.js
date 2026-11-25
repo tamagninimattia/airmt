@@ -135,3 +135,46 @@ test('giornale: registrazione proposta dal Budget', () => {
   eq(J.prefillFromQuery(q('causale=COSCCRED'), accounts, causali), null, 'solo causali finanziarie');
   eq(J.prefillFromQuery(q('voce=v&importo=abc'), accounts, causali).amount, null, 'importo non valido');
 });
+
+test('impostazioni: causali proposte per un nuovo conto patrimoniale', () => {
+  const accounts = [
+    { id: 'fin', name: 'Conto corrente FINECO', type: 'patrimoniale', grp: 'disponibilita', sort_order: 2, active: true },
+    { id: 'sat', name: 'Satispay', type: 'patrimoniale', grp: 'disponibilita', sort_order: 5, active: true },
+    { id: 'cre', name: 'Altri crediti', type: 'patrimoniale', grp: 'crediti', sort_order: 10, active: true },
+    { id: 'deb', name: 'Altri debiti', type: 'patrimoniale', grp: 'debiti', sort_order: 14, active: true },
+    { id: 'new', name: 'Conto Arancio', type: 'patrimoniale', grp: 'disponibilita', sort_order: 20, active: true }
+  ];
+  const causali = [
+    { id: 'c1', code: 'COSFIN', description: 'Costi Fineco', kind: 'costo', credit_account_id: 'fin' },
+    { id: 'c2', code: 'RICSAT', description: 'Ricavi Satispay', kind: 'ricavo', debit_account_id: 'sat' },
+    { id: 'c3', code: 'FINSAT', description: 'Trasferimenti Fineco -> Satispay', kind: 'finanziaria', debit_account_id: 'sat', credit_account_id: 'fin' }
+  ];
+  const acc = (id) => accounts.find((a) => a.id === id);
+  eq(M.accountAbbr(acc('fin'), causali), 'FIN', 'dalla causale di costo');
+  eq(M.accountAbbr(acc('sat'), causali), 'SAT', 'dalla causale di ricavo');
+  eq(M.accountAbbr(acc('new'), causali), 'ARA', 'dal nome, saltando «Conto»');
+  eq(M.accountAbbr(acc('cre'), causali), 'ALT', 'senza parole significative: la prima');
+
+  const p = new Map(M.causaleProposals(acc('new'), 'ARA', accounts, causali).map((x) => [x.key, x]));
+  eq([p.get('cos').rec.code, p.get('cos').rec.credit_account_id, p.get('cos').rec.grp], ['COSARA', 'new', 'Costi']);
+  eq([p.get('ric').rec.code, p.get('ric').rec.debit_account_id], ['RICARA', 'new']);
+  eq([p.get('out:fin').rec.code, p.get('out:fin').rec.debit_account_id, p.get('out:fin').rec.credit_account_id], ['ARAFIN', 'fin', 'new'], 'da Arancio a Fineco');
+  eq([p.get('in:sat').rec.code, p.get('in:sat').rec.debit_account_id, p.get('in:sat').rec.credit_account_id], ['SATARA', 'new', 'sat'], 'da Satispay ad Arancio');
+  ok(p.get('out:fin').on && p.get('in:fin').on && !p.get('out:sat').on, 'trasferimenti con il conto principale spuntati');
+  eq([p.get('icred').rec.code, p.get('icred').rec.debit_account_id, p.get('icred').rec.credit_account_id], ['ICREDARA', 'cre', 'new']);
+  eq([p.get('ddeb').rec.debit_account_id, p.get('ddeb').rec.credit_account_id], ['deb', 'new']);
+  ok([...p.values()].every((x) => x.existing === null), 'niente esiste ancora');
+  ok(!p.has('out:cre') && !p.has('in:deb'), 'Altri crediti e debiti non sono trasferimenti');
+
+  // per Satispay le causali con gli stessi conti esistono già
+  const s = new Map(M.causaleProposals(acc('sat'), 'SAT', accounts, causali).map((x) => [x.key, x]));
+  eq([s.get('ric').existing, s.get('in:fin').existing, s.get('cos').existing], ['RICSAT', 'FINSAT', null]);
+  // un conto di credito: niente spuntato
+  ok(M.causaleProposals(acc('cre'), 'CRE', accounts, causali).every((x) => !x.on), 'crediti: niente di base');
+
+  const chosen = [p.get('cos'), p.get('out:fin')];
+  eq(M.validateProposals('ARA', chosen, causali), []);
+  ok(/sigla/.test(M.validateProposals('A R', chosen, causali).join(' ')), 'sigla non valida');
+  const clash = M.causaleProposals(acc('new'), 'FIN', accounts, causali).find((x) => x.key === 'cos');
+  ok(/COSFIN è già usato/.test(M.validateProposals('FIN', [clash], causali).join(' ')), 'codice già usato');
+});

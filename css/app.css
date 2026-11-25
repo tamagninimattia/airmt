@@ -193,6 +193,12 @@ dialog.sheet {
   color: var(--ink); background: var(--card); box-shadow: 0 12px 40px rgb(0 0 0 / .5);
 }
 dialog.sheet.small { width: min(26rem, calc(100vw - 2rem)); }
+dialog.sheet.wide { width: min(46rem, calc(100vw - 2rem)); }
+/* finestra "Crea le causali" di un conto patrimoniale */
+dialog h3 { font-size: 1rem; margin: 1.1rem 0 .45rem; }
+label.check.cw-item { margin: 0 0 .35rem; gap: .2rem; flex-wrap: wrap; }
+label.check.cw-item code { font-size: .85rem; }
+table.cw-table label.check.cw-item { margin: 0; }
 dialog::backdrop { background: rgb(0 0 0 / .6); }
 dialog h2 { margin-bottom: .75rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
