@@ -3,14 +3,14 @@
    Tutti i colori stanno qui come variabili: il resto del file usa solo queste. */
 :root {
   color-scheme: dark;                 /* controlli nativi (select, date, scrollbar) scuri */
-  --paper: #262624;                   /* sfondo della pagina */
+  --paper: #1a1a19;                   /* sfondo della pagina */
   --side-bg: #000000;                 /* menu laterale e barra in alto: nero come il fondo del logo */
-  --card: #30302e;                    /* riquadri, tabelle, dialoghi */
-  --surface-2: #2a2a28;               /* intestazioni di tabella, righe di gruppo */
-  --surface-muted: #3a3936;           /* chip neutri, campi disattivati, voce del menu attiva */
-  --head-bg: #383733;                 /* righe di sezione della griglia */
-  --line: #45443e;                    /* bordi */
-  --line-soft: #3b3a36;               /* separatori tra le righe */
+  --card: #242422;                    /* riquadri, tabelle, dialoghi */
+  --surface-2: #1f1f1d;               /* intestazioni di tabella, righe di gruppo */
+  --surface-muted: #2f2e2c;           /* chip neutri, campi disattivati, voce del menu attiva */
+  --head-bg: #2c2b28;                 /* righe di sezione della griglia */
+  --line: #3a3934;                    /* bordi */
+  --line-soft: #2f2e2b;               /* separatori tra le righe */
   --ink: #f5f4ee;                     /* testo principale */
   --muted: #a8a69d;                   /* testo secondario (contrasto ≥ 6:1 sui riquadri) */
   --accent: #2fd59b;                  /* verde aurora: pulsanti principali (testo scuro: contrasto 9:1) */
@@ -25,9 +25,9 @@
   --warn-ink: #f0cd85;
   --warn-bg: rgb(229 181 90 / .13);
   --focus: #f0b429;
-  --field-bg: #262624;
-  --field-border: #57564f;
-  --var-row: #2d2d2b;
+  --field-bg: #1a1a19;
+  --field-border: #4a4943;
+  --var-row: #20201f;
   --saving: rgb(240 180 41 / .16);
   --input-cell: #ffff99;              /* celle da digitare del Budget (deciso con Mattia) */
   --input-cell-saving: #ebeb7a;
@@ -70,7 +70,7 @@ code { background: var(--surface-muted); color: var(--ink); padding: .05rem .3re
 /* Menu laterale */
 .side { display: none; flex-direction: column; gap: 1rem; padding: 1.1rem .75rem 1rem; background: var(--side-bg); border-right: 1px solid var(--line); }
 .side .brand { flex-direction: column; gap: .4rem; padding: .25rem .5rem .5rem; font-size: 1.35rem; letter-spacing: .01em; }
-.side .brand img { width: 6rem; height: 6rem; border-radius: 0; }
+.side .brand img { width: 12rem; height: 12rem; border-radius: 0; }
 #nav { display: flex; flex-direction: column; gap: .1rem; }
 #nav a {
   display: flex; align-items: center; gap: .65rem; padding: .5rem .75rem; border-radius: 8px;
