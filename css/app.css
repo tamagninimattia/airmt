@@ -238,6 +238,9 @@ dl.totals dd.strong { font-weight: 600; }
 .entry-form .actions { margin-top: .5rem; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .pair input { width: 100%; }
+.date-row { display: flex; gap: .4rem; }
+.date-row input { flex: 1; min-width: 0; }
+.entry-form .date-row .today { flex: none; min-height: 2.75rem; padding: 0 .7rem; }
 .alert-box, .alert-summary {
   background: var(--warn-bg); color: var(--warn-ink); border-left: 4px solid var(--warn);
   padding: .6rem .75rem; border-radius: var(--radius); margin: 0 0 .9rem; font-size: .92rem;

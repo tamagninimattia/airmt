@@ -187,6 +187,9 @@ function entryForm(ctx) {
   const accountSel = h('select', { id: 'j-account', name: 'account' });
   const accountField = h('div', { class: 'field' }, h('label', { for: 'j-account' }, 'Conto economico'), accountSel);
   const date = h('input', { id: 'j-date', type: 'date', required: true });
+  // scorciatoia per la data di oggi, più veloce del calendario
+  const todayBtn = h('button', { type: 'button', class: 'quiet today', title: 'Metti la data di oggi',
+                                 onclick: () => { date.value = ctx.today; syncAlert(); amount.focus(); } }, 'Oggi');
   const amount = h('input', { id: 'j-amount', inputmode: 'decimal', autocomplete: 'off', placeholder: '0,00' });
   const note = h('input', { id: 'j-note', autocomplete: 'off' });
   const provisional = h('input', { id: 'j-prov', type: 'checkbox' });
@@ -410,7 +413,8 @@ function entryForm(ctx) {
     h('div', { class: 'field' }, h('label', { for: 'j-causale' }, 'Causale'), causaleSel, fixedInfo),
     accountField,
     h('div', { class: 'pair' },
-      h('div', { class: 'field' }, h('label', { for: 'j-date' }, 'Data'), date),
+      h('div', { class: 'field' }, h('label', { for: 'j-date' }, 'Data'),
+        h('div', { class: 'date-row' }, date, todayBtn)),
       h('div', { class: 'field' }, h('label', { for: 'j-amount' }, 'Importo (€)'), amount)),
     h('div', { class: 'field' }, h('label', { for: 'j-note' }, 'Note'), note),
     h('label', { class: 'check prov-check', for: 'j-prov' }, provisional, ' Movimento provvisorio'),
