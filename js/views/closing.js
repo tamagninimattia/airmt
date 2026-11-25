@@ -237,7 +237,14 @@ function yearCard() {
   const { data, next, result } = S;
   const { closable, open } = yearClosable(data.months);
   const closedYear = data.status === 'chiuso';
-  const out = [h('h2', { id: 'year-title' }, 'Chiusura dell\'anno ' + data.year)];
+  const STATUS = { bozza: 'in bozza', attivo: 'attivo', chiuso: 'chiuso' };
+  const out = [
+    h('h2', { id: 'year-title' }, 'Chiusura dell\'anno ' + data.year),
+    // l'Apertura anno non è nel menu: ci si arriva da qui
+    h('p', { class: 'hint' }, `Anno ${STATUS[data.status] ?? data.status}. `,
+      h('a', { href: '#/apertura/' + data.year }, `Saldi iniziali del ${data.year}`),
+      data.status === 'bozza' ? ': controllali e attiva l\'anno.' : '.')
+  ];
 
   if (closedYear) {
     const reopen = h('button', { type: 'button', class: 'quiet' }, 'Riapri anno');
@@ -270,7 +277,7 @@ function yearCard() {
   }
 
   const diffs = nextYearOpenings(data, result.actual, next.openings).filter((r) => r.differs);
-  out.push(h('h3', null, 'Saldi iniziali del ' + nextYear));
+  out.push(h('h3', null, h('a', { href: '#/apertura/' + nextYear }, 'Saldi iniziali del ' + nextYear)));
   if (!diffs.length) {
     out.push(h('p', { class: 'ok-line' }, `✓ Coincidono con i saldi finali reali di dicembre ${data.year}.`));
     return out;

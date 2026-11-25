@@ -408,3 +408,8 @@ table.grid tr.head th .name, table.grid tr.sub th .name { max-width: none; }
   .tile-value { font-size: 1.1rem; }
   .tile-label, .tile-sub { font-size: .78rem; }
 }
+
+/* collegamento per tornare alla pagina da cui si arriva (pagine fuori dal menu) */
+.back { margin: 0 0 .5rem; font-size: .9rem; }
+.back a { color: var(--accent); text-decoration: none; }
+.back a:hover { text-decoration: underline; }

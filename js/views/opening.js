@@ -121,6 +121,7 @@ export async function render(root, { session, params }) {
 
   clearMsg();
   root.replaceChildren(h('div', { class: 'narrow' },
+    h('p', { class: 'back' }, h('a', { href: '#/chiusure/' + year }, '← Chiusure')),
     h('h1', null, 'Apertura anno'),
     years.length > 1 && h('nav', { class: 'tabs', 'aria-label': 'Anni' },
       years.map((y) => h('a', { href: '#/apertura/' + y.year, 'aria-current': y.year === year ? 'page' : null }, y.year))),

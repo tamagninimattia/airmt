@@ -110,6 +110,10 @@ function alerts(year) {
   const { result, period } = S;
   const items = [];
   const months = (s) => s.map((v, m) => (v !== 0 ? MONTHS[m] : null)).filter(Boolean).join(', ');
+  if (S.data.status === 'bozza') {
+    items.push(h('li', { class: 'warn' }, `Il ${S.data.year} è ancora in bozza: controlla i saldi iniziali e attiva l'anno. `,
+      h('a', { href: '#/apertura/' + S.data.year }, 'Apri i saldi iniziali')));
+  }
   if (!year.targetRaggiungibile) {
     items.push(h('li', { class: 'warn' }, `Target non raggiungibile: con il budget attuale mancano ${fmtAmount(-year.spendibile)} € e gli imprevisti sono negativi. `,
       h('a', { href: '#/budget/' + S.data.year }, 'Rivedi il budget')));

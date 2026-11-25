@@ -54,8 +54,10 @@ async function route() {
       location.replace('#/' + await defaultRoute()); // fa scattare di nuovo route()
       return;
     }
+    // l'Apertura anno non è nel menu: ci si arriva dalle Chiusure, che restano evidenziate
+    const navName = name === 'apertura' ? 'chiusure' : name;
     for (const a of document.querySelectorAll('#nav a[data-route]')) {
-      if (a.dataset.route === name) {
+      if (a.dataset.route === navName) {
         a.setAttribute('aria-current', 'page');
         $('menu-label').textContent = a.textContent;
       }
