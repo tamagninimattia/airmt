@@ -53,7 +53,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Tre tipi di causale: `finanziaria` (Dare e Avere fissi), `ricavo` (Dare fisso = il canale, Avere = conto economico scelto) e `costo` (Avere fisso = il canale, Dare = conto economico scelto).
 - Nel Giornale si sceglie la causale dal menu, poi data, importo e conto economico (se serve) e note. Il lato fisso si compila da solo (lo garantisce anche il trigger `entries_validate`).
 - Il mese di competenza è il mese della data. Le spese su carta restano nel mese della spesa; l'addebito su Fineco è un'altra registrazione.
-- Giornale pensato per l'uso da telefono.
+- Giornale pensato per l'uso da telefono. Sugli schermi larghi (≥ 64 rem) è su due colonne: a sinistra nuova registrazione e registrazioni del mese, a destra i Preferiti (per ora solo il riquadro, da fare); sul telefono i Preferiti vanno sotto.
 
 ## Alert di canale e righe Var +/-
 

@@ -206,8 +206,14 @@ dl.totals dd.strong { font-weight: 600; }
 .actions.status { align-items: center; margin-top: 2rem; }
 .actions.status .hint { margin: 0; }
 
-/* Giornale: una colonna, pensato per il telefono */
+/* Giornale: una colonna, pensato per il telefono; sugli schermi larghi a destra i preferiti */
 .journal { max-width: 34rem; }
+.journal-cols { display: grid; gap: 1.5rem; }
+.journal-side p { margin: 0; }
+@media (min-width: 64rem) {
+  .journal-cols { grid-template-columns: minmax(0, 34rem) minmax(14rem, 1fr); align-items: start; }
+  .journal-side { margin-top: 6.4rem; position: sticky; top: 1rem; }
+}
 .month-nav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .5rem 0 1rem; font-weight: 600; text-transform: capitalize; }
 .month-nav a {
   display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%;

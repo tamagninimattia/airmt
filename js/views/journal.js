@@ -39,16 +39,21 @@ export async function render(root, { params }) {
   const closed = months.some((m) => m.year === view.year && m.month === view.month && m.closed);
   ctx.form = entryForm(ctx);
 
-  root.replaceChildren(h('div', { class: 'journal' },
-    h('h1', null, 'Giornale'),
-    h('nav', { class: 'month-nav', 'aria-label': 'Mese' },
-      h('a', { href: '#/giornale/' + J.monthParam(J.shiftMonth(view, -1)), 'aria-label': 'Mese precedente' }, '‹'),
-      h('span', null, monthLabel(view.year, view.month), closed && h('span', { class: 'badge muted' }, 'chiuso')),
-      h('a', { href: '#/giornale/' + J.monthParam(J.shiftMonth(view, 1)), 'aria-label': 'Mese successivo' }, '›')),
-    ctx.form.el,
-    ctx.summary,
-    h('h2', null, 'Registrazioni del mese'),
-    ctx.list));
+  // due colonne sugli schermi larghi: a sinistra inserimento e registrazioni, a destra i preferiti
+  root.replaceChildren(h('div', { class: 'journal-cols' },
+    h('div', { class: 'journal' },
+      h('h1', null, 'Giornale'),
+      h('nav', { class: 'month-nav', 'aria-label': 'Mese' },
+        h('a', { href: '#/giornale/' + J.monthParam(J.shiftMonth(view, -1)), 'aria-label': 'Mese precedente' }, '‹'),
+        h('span', null, monthLabel(view.year, view.month), closed && h('span', { class: 'badge muted' }, 'chiuso')),
+        h('a', { href: '#/giornale/' + J.monthParam(J.shiftMonth(view, 1)), 'aria-label': 'Mese successivo' }, '›')),
+      ctx.form.el,
+      ctx.summary,
+      h('h2', null, 'Registrazioni del mese'),
+      ctx.list),
+    h('aside', { class: 'journal-side card', 'aria-labelledby': 'fav-title' },
+      h('h2', { id: 'fav-title' }, 'Preferiti'),
+      h('p', { class: 'muted' }, 'Qui compariranno le registrazioni preferite.'))));
 
   await loadEntries(ctx);
 }
