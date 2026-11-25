@@ -25,7 +25,7 @@ function draw() {
   const { data, result } = S;
   const closed = new Set(data.months.filter((m) => m.closed).map((m) => m.month - 1));
   const rows = positionRows(data, result, {
-    hrefFor: (a) => '#/schede/' + data.year + '/' + encodeURIComponent(a.id)
+    hrefFor: (a) => '#/partitario/' + data.year + '/' + encodeURIComponent(a.id)
   });
   const grid = readGrid({ rows, expanded: S.expanded, cur: S.cur, closed, label: 'Conto',
     onToggle: (m) => {

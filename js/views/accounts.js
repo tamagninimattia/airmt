@@ -1,4 +1,4 @@
-// Schede conto: per ogni conto patrimoniale, saldo iniziale, variazioni per causale e saldo finale
+// Partitario (schede conto): per ogni conto patrimoniale, saldo iniziale, variazioni per causale e saldo finale
 // mese per mese (Budget, Progr., Scost.), più i movimenti reali di un mese con il saldo progressivo.
 import { h, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
@@ -14,7 +14,7 @@ let S = null;
 
 export async function render(root, { params }) {
   const years = await yearList();
-  if (!years.length) return noYear(root, 'Schede conto');
+  if (!years.length) return noYear(root, 'Partitario');
   const year = pickYear(years, params[0], +isoDate().slice(0, 4));
   const data = await loadYear(year);
   const accounts = sortByOrder(data.accounts.filter((a) => a.type === 'patrimoniale'));
@@ -35,7 +35,7 @@ export async function render(root, { params }) {
   draw();
 }
 
-const href = (year, account) => '#/schede/' + year + '/' + encodeURIComponent(account.id);
+const href = (year, account) => '#/partitario/' + year + '/' + encodeURIComponent(account.id);
 
 function draw() {
   const { data, account, result } = S;
@@ -68,7 +68,7 @@ function draw() {
 
   S.root.replaceChildren(h('div', { class: 'budget' },
     h('div', { class: 'budget-head' },
-      h('h1', null, 'Scheda conto ' + data.year),
+      h('h1', null, 'Partitario ' + data.year),
       S.years.length > 1 && h('nav', { class: 'tabs', 'aria-label': 'Anni' },
         S.years.map((y) => h('a', { href: href(y, account), 'aria-current': y === data.year ? 'page' : null }, y))),
       picker,

@@ -12,7 +12,8 @@ import * as position from './views/position.js';
 import * as dashboard from './views/dashboard.js';
 import * as closing from './views/closing.js';
 
-const routes = { dashboard, giornale: journal, budget, schede: accounts, patrimonio: position, chiusure: closing, apertura: opening, avvio: setup, impostazioni: settings };
+const routes = { dashboard, giornale: journal, budget, partitario: accounts, patrimonio: position,
+                 chiusure: closing, apertura: opening, avvio: setup, impostazioni: settings };
 let session = null;
 
 // Senza piano dei conti si parte dall'Avvio; altrimenti dalla Dashboard sugli schermi larghi
@@ -23,16 +24,17 @@ async function defaultRoute() {
   return window.matchMedia('(min-width: 900px)').matches ? 'dashboard' : 'giornale';
 }
 
-// Menu compatto sui telefoni: il pulsante apre e chiude l'elenco delle sezioni
+// Sul telefono il menu laterale è un pannello che il pulsante ☰ apre e chiude
 function setMenu(open) {
-  document.querySelector('header.top').classList.toggle('open', open);
+  document.body.classList.toggle('menu-open', open);
   $('menu-btn').setAttribute('aria-expanded', String(open));
 }
 
 async function route() {
   clearMsg();
   const view = $('view');
-  $('nav').hidden = !session;
+  $('side').hidden = !session;
+  document.body.classList.toggle('auth', Boolean(session));   // con l'accesso compare il menu laterale
   $('menu-btn').hidden = !session;
   setMenu(false);
   if (!session) {
@@ -42,6 +44,11 @@ async function route() {
   $('who').textContent = session.user.email;
 
   const [name, ...params] = location.hash.replace(/^#\/?/, '').split('/');
+  // indirizzo vecchio delle schede conto: si passa al Partitario con gli stessi parametri
+  if (name === 'schede') {
+    location.replace(['#/partitario', ...params].join('/'));
+    return;
+  }
   try {
     if (!routes[name]) {
       location.replace('#/' + await defaultRoute()); // fa scattare di nuovo route()
@@ -70,7 +77,7 @@ if (!configured) {
   window.addEventListener('hashchange', route);
   $('menu-btn').addEventListener('click', () => setMenu($('menu-btn').getAttribute('aria-expanded') !== 'true'));
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') setMenu(false); });
-  $('nav').addEventListener('click', (ev) => { if (ev.target.closest('a')) setMenu(false); });
+  $('side').addEventListener('click', (ev) => { if (ev.target.closest('a')) setMenu(false); });
 
   $('btn-logout').addEventListener('click', async () => {
     const { error } = await sb.auth.signOut();
