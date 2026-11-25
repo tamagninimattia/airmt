@@ -183,7 +183,7 @@ function closeCard() {
     h('h2', { id: 'close-title' }, 'Chiusura di ' + name),
     h('p', { class: 'lede-small' }, closed
       ? `Mese chiuso${row.closed_at ? ' il ' + new Date(row.closed_at).toLocaleDateString('it-IT') : ''}. Si può riaprire.`
-      : 'Mese aperto. Prima di chiuderlo allinea il budget del mese al consuntivo: l\'app non lo riscrive.'),
+      : 'Mese aperto. Prima di chiuderlo allinea il budget del mese al consuntivo, qui sotto o con le frecce ← del Budget.'),
     h('ul', { class: 'checklist' },
       item(!c.budgetDiffs.length, c.budgetDiffs.length
         ? `${c.budgetDiffs.length} voci con budget diverso dal consuntivo`
