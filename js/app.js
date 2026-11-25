@@ -61,7 +61,7 @@ async function route() {
     for (const a of document.querySelectorAll('#nav a[data-route]')) {
       if (a.dataset.route === navName) {
         a.setAttribute('aria-current', 'page');
-        $('menu-label').textContent = a.textContent;
+        $('menu-label').textContent = a.textContent.trim();
       }
       else a.removeAttribute('aria-current');
     }
