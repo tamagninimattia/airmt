@@ -76,14 +76,49 @@ export function validateEntry({ causale, account, date, amount }, yearNumbers) {
   return errors;
 }
 
-// Record per la tabella entries: il lato fisso viene dalla causale (lo ricontrolla il trigger)
-export function buildEntry(causale, accountId, date, amount, note) {
+// Record per la tabella entries: il lato fisso viene dalla causale (lo ricontrolla il trigger).
+// provisional: movimento provvisorio, visibile nel Giornale ma escluso da tutti i calcoli.
+export function buildEntry(causale, accountId, date, amount, note, provisional = false) {
   return {
     entry_date: date,
     causale_id: causale.id,
     debit_account_id:  causale.kind === 'costo'  ? accountId : causale.debit_account_id,
     credit_account_id: causale.kind === 'ricavo' ? accountId : causale.credit_account_id,
     amount,
+    note: (note || '').trim() || null,
+    provisional: Boolean(provisional)
+  };
+}
+
+// Movimenti provvisori arrivati a maturazione: data uguale o precedente a oggi, dal più vecchio
+export function maturedProvisional(entries, todayIso) {
+  return entries.filter((e) => e.provisional && e.entry_date <= todayIso)
+    .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+}
+
+// Preferiti: la causale è obbligatoria; conto economico e importo sono facoltativi
+// (per le spese variabili si salva solo lo schema). amount: null se il campo è vuoto.
+export function validateFavorite({ name, causale, account, amount }) {
+  const errors = [];
+  if (!(name || '').trim()) errors.push('Dai un nome al preferito.');
+  if (!causale) errors.push('Scegli almeno la causale prima di salvare il preferito.');
+  if (causale && account && (!needsEconomic(causale) || account.kind !== causale.kind)) {
+    errors.push(`Con una causale di ${causale.kind} il conto deve essere un ${causale.kind}.`);
+  }
+  if (Number.isNaN(amount)) errors.push('Scrivi l\'importo come 12,50 (al massimo 2 decimali), oppure lascialo vuoto.');
+  else if (amount != null && !(amount > 0)) errors.push('L\'importo deve essere maggiore di zero, oppure vuoto.');
+  return errors;
+}
+
+export function buildFavorite(name, causale, accountId, amount, note) {
+  return {
+    name: name.trim(),
+    causale_id: causale.id,
+    economic_account_id: needsEconomic(causale) ? accountId || null : null,
+    amount: amount ?? null,
     note: (note || '').trim() || null
   };
 }
+
+// Nome proposto per un nuovo preferito: il conto economico, altrimenti la descrizione della causale
+export const favoriteName = (causale, account) => account?.name ?? causale?.description ?? '';

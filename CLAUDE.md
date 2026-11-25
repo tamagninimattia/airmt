@@ -33,6 +33,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - `js/dashboard-model.js`: periodo di confronto, riepilogo, numeri chiave, scostamenti per sezione e per voce. `js/charts.js`: grafici SVG senza librerie (linee e barre), disegnati alla larghezza reale del riquadro.
 - `js/closing-model.js`: riconciliazione per mese (`reconciliationRows`), controlli prima della chiusura (`monthChecks`), chiusura dell'anno, saldi iniziali dell'anno dopo.
 - `contabilita_schema.sql`: tabelle, RLS, controllo del Giornale, vista `entries_enriched`, funzioni `seed_default_chart`, `init_year`, `account_balances`, `suggest_channel_adjustments`.
+- `migrazione_preferiti_provvisori.sql`: aggiunge al database già creato i preferiti (`favorites`) e i movimenti provvisori (`entries.provisional`, vista e `account_balances` aggiornate); da eseguire una volta, lo schema aggiornato lo include già.
 - `migrazione_rimmt.sql`: rende calcolato il budget di `RIMMT` nel database già creato (da eseguire una volta; lo schema aggiornato lo include già per le nuove installazioni).
 - `seed_2027.sql`: saldi iniziali 2027 e budget 2027 presi dall'Excel (da eseguire una volta nel SQL Editor, dopo aver creato l'anno).
 - `TM27_Pers_.xlsx`: file Excel di riferimento (da copiare nella cartella).
@@ -53,7 +54,9 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Tre tipi di causale: `finanziaria` (Dare e Avere fissi), `ricavo` (Dare fisso = il canale, Avere = conto economico scelto) e `costo` (Avere fisso = il canale, Dare = conto economico scelto).
 - Nel Giornale si sceglie la causale dal menu, poi data, importo e conto economico (se serve) e note. Il lato fisso si compila da solo (lo garantisce anche il trigger `entries_validate`).
 - Il mese di competenza è il mese della data. Le spese su carta restano nel mese della spesa; l'addebito su Fineco è un'altra registrazione.
-- Giornale pensato per l'uso da telefono. Sugli schermi larghi (≥ 64 rem) è su due colonne uguali che occupano la pagina (fino a 96 rem): a sinistra nuova registrazione e registrazioni del mese, a destra i Preferiti (per ora solo il riquadro, da fare); sul telefono i Preferiti vanno sotto. Sugli schermi larghi (≥ 64 rem) è su due colonne: a sinistra nuova registrazione e registrazioni del mese, a destra i Preferiti (per ora solo il riquadro, da fare); sul telefono i Preferiti vanno sotto.
+- Giornale pensato per l'uso da telefono. Sugli schermi larghi (≥ 64 rem) è su due colonne uguali che occupano la pagina (fino a 96 rem): a sinistra nuova registrazione e registrazioni del mese, a destra i Preferiti; sul telefono i Preferiti vanno sotto.
+- Preferiti (tabella `favorites`, decisi con Mattia): la stella ☆ del form chiede conferma e un nome e salva solo lo schema (causale, conto economico, importo e note; conto e importo facoltativi, la data no), senza registrare. Cliccando un preferito il form si compila con la data di oggi e si registra con "Registra". Ordine alfabetico; il menu ⋯ rinomina o elimina (con conferma).
+- Movimento provvisorio (`entries.provisional`, deciso con Mattia): compare nel Giornale in lilla con il badge "provvisorio" ma non entra in nessun calcolo (`loadYear` lo esclude, come `account_balances` e quindi `init_year`) e non dà Alert di canale. Si conferma aprendolo e togliendo la spunta. Un avviso in cima al Giornale elenca i provvisori di qualsiasi mese con data ≤ oggi, cliccabili per aprirli in modifica.
 
 ## Alert di canale e righe Var +/-
 

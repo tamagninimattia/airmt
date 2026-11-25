@@ -29,7 +29,9 @@
   --field-border: #4a4943;
   --var-row: #20201f;
   --saving: rgb(240 180 41 / .16);
-  --input-cell: #ffff99;              /* celle da digitare del Budget (deciso con Mattia) */
+  --prov: #b4bdfa;                    /* movimenti provvisori (lilla) */
+  --prov-bg: rgb(180 189 250 / .08);
+  --input-cell: #ffff99;             /* celle da digitare del Budget (deciso con Mattia) */
   --input-cell-saving: #ebeb7a;
   --on-input-cell: #1f1e1d;
   --on-input-cell-error: #b3261e;
@@ -257,6 +259,37 @@ ul.entries li.editing { background: var(--surface-muted); }
 .entry.finanziaria .amt { color: var(--muted); }
 .entry .badge { grid-area: badge; justify-self: end; margin: .15rem 0 0; }
 .badge.alert { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn); }
+
+/* Stella dei preferiti nell'intestazione del form */
+.form-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .4rem; }
+.form-head h2 { margin: 0; }
+button.star { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border-radius: 50%; color: var(--warn); }
+button.star .ico { width: 1.35rem; height: 1.35rem; }
+.prov-check { margin: .1rem 0 .3rem; min-height: 2.25rem; }
+.entry-form .prov-check input { min-height: 0; width: 1.15rem; height: 1.15rem; }
+
+/* Movimenti provvisori: lilla, distinti da registrazioni, avvisi ed errori */
+ul.entries li.provisional { background: var(--prov-bg); box-shadow: inset 3px 0 0 var(--prov); }
+.entry.provisional .what strong, .entry.provisional .amt { color: var(--prov); font-style: italic; }
+.badge.prov { background: transparent; color: var(--prov); border: 1px dashed var(--prov); }
+.matured p { margin: 0; max-width: none; }
+.matured ul { margin: .4rem 0 0; padding-left: 1.1rem; }
+.matured li + li { margin-top: .2rem; }
+button.link { all: unset; cursor: pointer; color: var(--warn-ink); text-decoration: underline; text-underline-offset: 2px; }
+button.link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Preferiti: pulsanti che compilano il form, con il menu ⋯ per rinominare o eliminare */
+ul.favs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .5rem; }
+li.fav { display: flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+li.fav:hover { border-color: var(--accent); }
+button.fav-use { all: unset; box-sizing: border-box; cursor: pointer; flex: 1; min-width: 0; padding: .55rem .75rem; min-height: 3.1rem; }
+button.fav-use strong, button.fav-use small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.fav-use strong { font-weight: 600; }
+button.fav-use small { color: var(--muted); font-size: .82rem; }
+button.fav-menu { all: unset; cursor: pointer; padding: 0 .8rem; color: var(--muted); font-weight: 600; }
+button.fav-use:hover, button.fav-menu:hover { background: var(--surface-muted); }
+button.fav-menu:hover { color: var(--ink); }
+button.fav-use:focus-visible, button.fav-menu:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 
 /* Budget a griglia (desktop): intestazione e prima colonna fisse */
 main:has(.budget) { max-width: none; }

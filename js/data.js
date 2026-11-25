@@ -11,8 +11,10 @@ export async function loadYear(year) {
       rows(sb.from('accounts').select('*')),
       rows(sb.from('causali').select('*')),
       rows(sb.from('opening_balances').select('account_id, amount').eq('year', year)),
+      // i movimenti provvisori stanno solo nel Giornale: non entrano in nessun calcolo
       rowsAll(() => sb.from('entries')
         .select('id, entry_date, causale_id, debit_account_id, credit_account_id, amount, note')
+        .eq('provisional', false)
         .gte('entry_date', `${year}-01-01`).lt('entry_date', `${year + 1}-01-01`)
         .order('entry_date').order('id')),
       byYear('budget_accounts', 'month, account_id, amount'),

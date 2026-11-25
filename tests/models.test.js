@@ -80,9 +80,39 @@ test('giornale: Alert, costruzione e validazione', () => {
   ok(J.channelAlert(cos, am), 'fuori canale');
   ok(!J.channelAlert(ccred, am), 'canale standard');
   eq(J.buildEntry(cos, 'am', '2027-03-04', 10.99, ' '),
-     { entry_date: '2027-03-04', causale_id: 'COSFIN', debit_account_id: 'am', credit_account_id: 'fin', amount: 10.99, note: null });
+     { entry_date: '2027-03-04', causale_id: 'COSFIN', debit_account_id: 'am', credit_account_id: 'fin', amount: 10.99, note: null,
+       provisional: false });
+  eq(J.buildEntry(cos, 'am', '2027-03-04', 10.99, '', true).provisional, true, 'movimento provvisorio');
   const fin = { id: 'PREFIN', kind: 'finanziaria', debit_account_id: 'por', credit_account_id: 'fin' };
   eq(J.validateEntry({ causale: fin, account: null, date: '2027-01-02', amount: 50 }, [2027]), []);
   const errs = J.validateEntry({ causale: cos, account: null, date: '2026-01-02', amount: NaN }, [2027]).join(' ');
   ok(/conto economico/.test(errs) && /2026/.test(errs) && /12,50/.test(errs), errs);
+});
+
+test('giornale: movimenti provvisori maturati', () => {
+  const list = [
+    { id: 1, entry_date: '2027-03-10', provisional: true },
+    { id: 2, entry_date: '2027-03-05', provisional: true },
+    { id: 3, entry_date: '2027-03-01', provisional: false },
+    { id: 4, entry_date: '2027-03-11', provisional: true }
+  ];
+  eq(J.maturedProvisional(list, '2027-03-10').map((e) => e.id), [2, 1], 'solo provvisori con data ≤ oggi, dal più vecchio');
+  eq(J.maturedProvisional(list, '2027-02-28'), [], 'nessuno ancora maturato');
+});
+
+test('giornale: preferiti', () => {
+  const cos = { id: 'COSFIN', kind: 'costo', description: 'Costi via Fineco', credit_account_id: 'fin' };
+  const fin = { id: 'PREFIN', kind: 'finanziaria', description: 'Prelievo', debit_account_id: 'por', credit_account_id: 'fin' };
+  const voce = { id: 'v', name: 'Voce di costo', type: 'economico', kind: 'costo' };
+  const ricavo = { id: 'r', name: 'Voce di ricavo', type: 'economico', kind: 'ricavo' };
+  eq(J.validateFavorite({ name: 'Spesa', causale: cos, account: voce, amount: 10 }), [], 'completo');
+  eq(J.validateFavorite({ name: 'Spesa', causale: cos, account: null, amount: null }), [], 'senza conto né importo');
+  const errs = J.validateFavorite({ name: ' ', causale: cos, account: ricavo, amount: NaN }).join(' ');
+  ok(/nome/.test(errs) && /costo/.test(errs) && /12,50/.test(errs), errs);
+  ok(J.validateFavorite({ name: 'x', causale: null, account: null, amount: -1 }).length === 2, 'causale mancante e importo negativo');
+  eq(J.buildFavorite(' Spesa ', cos, 'v', null, ' '),
+     { name: 'Spesa', causale_id: 'COSFIN', economic_account_id: 'v', amount: null, note: null });
+  eq(J.buildFavorite('Prelievo', fin, 'v', 50, 'bancomat').economic_account_id, null, 'causale finanziaria senza conto economico');
+  eq(J.favoriteName(cos, voce), 'Voce di costo');
+  eq(J.favoriteName(fin, null), 'Prelievo');
 });

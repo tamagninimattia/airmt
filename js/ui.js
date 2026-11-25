@@ -58,6 +58,46 @@ export function confirmBox({ title, lines = [], ok = 'Conferma', danger = false 
   });
 }
 
+// Dialogo con un campo di testo obbligatorio. Restituisce { value } se si conferma,
+// { alt: true } se si sceglie il pulsante alternativo (alt: { label, danger }), null se si annulla.
+export function promptBox({ title, lines = [], label, value = '', ok = 'Salva', alt = null, maxlength = 60 }) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      dlg.close(); dlg.remove(); resolve(result);
+    };
+    const input = h('input', { id: 'prompt-input', autocomplete: 'off', maxlength, value });
+    const error = h('p', { class: 'form-error', role: 'alert', hidden: true }, 'Scrivi un nome.');
+    const form = h('form', { method: 'dialog', novalidate: true },
+      h('h2', null, title),
+      lines.map((t) => h('p', null, t)),
+      h('div', { class: 'field' }, h('label', { for: 'prompt-input' }, label), input),
+      error,
+      h('div', { class: 'actions' },
+        h('button', { type: 'submit' }, ok),
+        h('button', { type: 'button', class: 'quiet', onclick: () => finish(null) }, 'Annulla'),
+        alt && h('button', { type: 'button', class: (alt.danger ? 'danger ' : '') + 'quiet push',
+                             onclick: () => finish({ alt: true }) }, alt.label)));
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      if (!input.value.trim()) {
+        error.hidden = false;
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();
+        return;
+      }
+      finish({ value: input.value.trim() });
+    });
+    const dlg = h('dialog', { class: 'sheet small' }, form);
+    dlg.addEventListener('close', () => finish(null));
+    document.body.append(dlg);
+    dlg.showModal();
+    input.select();
+  });
+}
+
 // Pagina vuota quando non esiste ancora nessun anno
 export function noYear(root, title) {
   root.replaceChildren(h('div', { class: 'narrow' }, h('h1', null, title),

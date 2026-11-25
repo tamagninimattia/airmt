@@ -110,6 +110,8 @@ create table if not exists entries (
   note              text,
   created_at        timestamptz not null default now()
 );
+-- Movimento provvisorio: compare nel Giornale ma non entra in nessun calcolo finché non si conferma
+alter table entries add column if not exists provisional boolean not null default false;
 create index if not exists entries_user_date_idx on entries (user_id, entry_date);
 create index if not exists entries_causale_idx   on entries (causale_id);
 create index if not exists entries_debit_idx     on entries (debit_account_id);
@@ -159,6 +161,20 @@ create table if not exists reconciliations (
   primary key (user_id, year, month, account_id),
   foreign key (user_id, year) references years(user_id, year) on delete cascade
 );
+
+-- Preferiti del Giornale: schemi di registrazione (causale, conto, importo, note) da
+-- richiamare con un clic. Importo e note sono facoltativi; la data non si salva.
+create table if not exists favorites (
+  id                  uuid primary key default gen_random_uuid(),
+  user_id             uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name                text not null check (length(btrim(name)) > 0),
+  causale_id          uuid not null references causali(id) on delete cascade,
+  economic_account_id uuid references accounts(id) on delete cascade,
+  amount              numeric(14,2) check (amount > 0),
+  note                text,
+  created_at          timestamptz not null default now()
+);
+create index if not exists favorites_user_idx on favorites (user_id);
 
 
 -- ---------------------------------------------------------------------
@@ -224,6 +240,12 @@ create policy "own rows" on reconciliations for all to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
+alter table favorites enable row level security;
+drop policy if exists "own rows" on favorites;
+create policy "own rows" on favorites for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
 
 
 -- ---------------------------------------------------------------------
@@ -279,7 +301,8 @@ create trigger entries_validate_trg
 -- ---------------------------------------------------------------------
 -- 4. VISTA CON L'ALERT DI CANALE
 --    channel_alert = true quando la causale usata e' diversa dal canale
---    standard del conto economico (e' l'avviso che ti ricorda le Var +/-)
+--    standard del conto economico (e' l'avviso che ti ricorda le Var +/-).
+--    I movimenti provvisori non danno Alert: non entrano nei calcoli.
 -- ---------------------------------------------------------------------
 create or replace view entries_enriched
 with (security_invoker = true) as
@@ -291,9 +314,11 @@ select
   ea.id   as economic_account_id,
   ea.name as economic_account_name,
   ea.standard_causale_id,
-  coalesce(ea.kind = c.kind
+  coalesce(not e.provisional
+           and ea.kind = c.kind
            and ea.standard_causale_id is not null
-           and ea.standard_causale_id <> e.causale_id, false) as channel_alert
+           and ea.standard_causale_id <> e.causale_id, false) as channel_alert,
+  e.provisional
 from entries e
 join causali c on c.id = e.causale_id
 left join accounts ea
@@ -306,7 +331,7 @@ left join accounts ea
 -- ---------------------------------------------------------------------
 
 -- Saldo a fine mese dei conti patrimoniali: saldo iniziale dell'anno + movimenti
--- da gennaio a p_month (consuntivo concatenato).
+-- da gennaio a p_month (consuntivo concatenato). I movimenti provvisori non contano.
 create or replace function account_balances(p_year int, p_month int default 12)
 returns table (account_id uuid, balance numeric)
 language sql
@@ -316,12 +341,14 @@ as $$
   with mv as (
     select debit_account_id as account_id, amount as d, 0::numeric as c
       from entries
-     where entry_date >= make_date(p_year, 1, 1)
+     where not provisional
+       and entry_date >= make_date(p_year, 1, 1)
        and entry_date <  (make_date(p_year, p_month, 1) + interval '1 month')::date
     union all
     select credit_account_id, 0::numeric, amount
       from entries
-     where entry_date >= make_date(p_year, 1, 1)
+     where not provisional
+       and entry_date >= make_date(p_year, 1, 1)
        and entry_date <  (make_date(p_year, p_month, 1) + interval '1 month')::date
   ),
   agg as (
