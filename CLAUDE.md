@@ -7,8 +7,10 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 ## Stack e modo di lavorare
 
 - HTML/JS puro, senza framework né build. `supabase-js` da CDN con versione fissata.
-- Backend: Supabase (Postgres, Auth, RLS). Hosting: GitHub Pages.
-- Si lavora in locale con un server (`python -m http.server 8000`) e si fa un solo `git push` a progetto finito. Commit piccoli e frequenti, uno per funzione.
+- Backend: Supabase (Postgres, Auth, RLS). Hosting: GitHub Pages dal ramo `main` di https://github.com/tamagninimattia/airmt (repository pubblico), app su https://tamagninimattia.github.io/airmt/.
+- Si lavora in locale con un server (`python -m http.server 8000`). Commit piccoli e frequenti, uno per funzione.
+- Pubblicazione automatica (deciso con Mattia): dopo ogni modifica provata (test e, se serve, screenshot) commit e `git push` su `main` senza chiedere conferma. Il ramo locale `master` è solo la copia della vecchia cronologia con dati personali: non va mai pubblicato.
+- Supabase gratuito mette in pausa il progetto dopo circa una settimana di inattività: se le richieste rispondono "521" va ripristinato dal pannello (Restore project).
 - La chiave `anon` è pubblica e sta in `index.html`. Non usare mai la `service_role`.
 - Le registrazioni nuove su Supabase sono disattivate e devono restare così.
 - Ogni modifica allo schema va fatta in `contabilita_schema.sql` (deve restare rieseguibile) e non solo a mano sul database.
