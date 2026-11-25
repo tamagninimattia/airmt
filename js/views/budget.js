@@ -101,7 +101,8 @@ function rowEl(row, ncols) {
   const cells = [labelCell(row)];
   for (let m = 0; m < 12; m++) {
     if (row.edit) {
-      const input = h('input', { class: 'cell', inputmode: 'decimal', autocomplete: 'off', 'data-m': m,
+      // il placeholder di uno spazio serve al CSS per colorare di grigio le celle vuote
+      const input = h('input', { class: 'cell', inputmode: 'decimal', autocomplete: 'off', 'data-m': m, placeholder: ' ',
                                  'aria-label': row.label + (row.code ? ' ' + row.code : '') + ', ' + MONTHS[m] });
       input.addEventListener('focus', () => input.select());
       input.addEventListener('change', () => commit(row, m, input));
