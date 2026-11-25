@@ -73,19 +73,20 @@ function isHeader(cells) {
 }
 
 /**
- * Trova la causale per una coppia di conti. Restituisce { causale, account } (account = la voce
+ * Trova la causale per una coppia di conti. Restituisce { causale, account, storno } (account = la voce
  * economica, se c'è) oppure { error }. code: codice causale facoltativo, per scegliere tra più causali.
+ * Storno: una voce di costo in Da (rimborso, reso, vendita) o una voce di ricavo in A. Si registra con la
+ * causale del verso opposto (ricavo sul conto che incassa, costo sul conto che paga) e la voce ne esce
+ * ridotta, perché i costi valgono Dare − Avere e i ricavi Avere − Dare.
  */
 export function matchCausale(from, to, causali, code) {
   if (!from || !to) return { error: 'Conto mancante.' };
   if (from.id === to.id) return { error: 'Da e A sono lo stesso conto.' };
   let kind, list, account = null;
   if (from.type === 'patrimoniale' && to.type === 'economico') {
-    if (to.kind !== 'costo') return { error: `«${to.name}» è un ricavo: va nella colonna Da.` };
     kind = 'costo'; account = to;
     list = causali.filter((c) => c.kind === 'costo' && c.credit_account_id === from.id);
   } else if (from.type === 'economico' && to.type === 'patrimoniale') {
-    if (from.kind !== 'ricavo') return { error: `«${from.name}» è un costo: va nella colonna A.` };
     kind = 'ricavo'; account = from;
     list = causali.filter((c) => c.kind === 'ricavo' && c.debit_account_id === to.id);
   } else if (from.type === 'patrimoniale' && to.type === 'patrimoniale') {
@@ -94,9 +95,10 @@ export function matchCausale(from, to, causali, code) {
   } else {
     return { error: 'Da e A sono due voci economiche: uno dei due deve essere un conto patrimoniale.' };
   }
+  const storno = Boolean(account && account.kind !== kind);
   if (code) {
     const c = list.find((x) => x.code === code.trim().toUpperCase());
-    return c ? { causale: c, account } : { error: `La causale ${code} non collega «${from.name}» e «${to.name}».` };
+    return c ? { causale: c, account, storno } : { error: `La causale ${code} non collega «${from.name}» e «${to.name}».` };
   }
   if (!list.length) {
     const what = kind === 'costo' ? `di costo pagata da «${from.name}»` : kind === 'ricavo' ? `di ricavo incassata su «${to.name}»`
@@ -105,7 +107,7 @@ export function matchCausale(from, to, causali, code) {
   }
   // tra più causali possibili vale il canale standard della voce, altrimenti la si indica nella colonna Causale
   const std = account && list.find((c) => c.id === account.standard_causale_id);
-  if (list.length === 1 || std) return { causale: std ?? list[0], account };
+  if (list.length === 1 || std) return { causale: std ?? list[0], account, storno };
   return { error: `Più causali possibili (${list.map((c) => c.code).join(', ')}): scrivi quella giusta nella colonna Causale.` };
 }
 
@@ -142,6 +144,7 @@ export function parseImport(table, { accounts, causali, years, mapping = {} }) {
       else {
         r.causale = m.causale;
         r.account = m.account;
+        r.storno = m.storno;
         r.rec = {
           entry_date: r.date, causale_id: m.causale.id, amount: r.amount, note: r.note || null, provisional: false,
           debit_account_id: m.causale.kind === 'costo' ? m.account.id : m.causale.debit_account_id,

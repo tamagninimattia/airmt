@@ -58,12 +58,14 @@ export function alertText(account, standardCode, isoDate) {
          `Ricorda le Var +/- di ${month} nel Budget.`;
 }
 
-export function validateEntry({ causale, account, date, amount }, yearNumbers) {
+// stornoId: voce già registrata come storno (costo con causale di ricavo o viceversa, dall'importazione):
+// modificando quella registrazione la si può tenere
+export function validateEntry({ causale, account, date, amount, stornoId = null }, yearNumbers) {
   const errors = [];
   if (!causale) errors.push('Scegli la causale.');
   if (needsEconomic(causale)) {
     if (!account) errors.push('Scegli il conto economico.');
-    else if (account.type !== 'economico' || account.kind !== causale.kind) {
+    else if (account.type !== 'economico' || (account.kind !== causale.kind && account.id !== stornoId)) {
       errors.push(`Con una causale di ${causale.kind} il conto deve essere un ${causale.kind}.`);
     }
   }

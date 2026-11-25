@@ -220,7 +220,8 @@ function entryForm(ctx) {
 
   function fillAccounts(kind, keepId) {
     const current = accountSel.value || keepId || '';
-    const list = sortByOrder(ctx.accounts.filter((a) => a.type === 'economico' && a.kind === kind && usable(a, keepId)));
+    // la voce di uno storno (di tipo opposto alla causale) resta nel menu della sua registrazione
+    const list = sortByOrder(ctx.accounts.filter((a) => a.type === 'economico' && ((a.kind === kind && usable(a, keepId)) || a.id === keepId)));
     accountSel.replaceChildren(h('option', { value: '' }, 'Scegli il conto'),
       ...[...groupBy(list, (a) => a.budget_section || 'Senza sezione')].map(([section, items]) =>
         h('optgroup', { label: section }, items.map((a) => h('option', { value: a.id }, a.name)))));
@@ -367,7 +368,8 @@ function entryForm(ctx) {
     const c = ctx.causale(causaleSel.value);
     const a = J.needsEconomic(c) ? ctx.account(accountSel.value) : null;
     const value = parseAmount(amount.value);
-    const errors = J.validateEntry({ causale: c, account: a, date: date.value, amount: value }, ctx.years);
+    const errors = J.validateEntry({ causale: c, account: a, date: date.value, amount: value,
+                                    stornoId: editing?.economic_account_id ?? null }, ctx.years);
     if (errors.length) {
       error.textContent = errors.join(' ');
       error.hidden = false;

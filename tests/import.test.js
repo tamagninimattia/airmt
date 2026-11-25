@@ -37,7 +37,12 @@ test('importazione: causale dalla coppia di conti', () => {
   eq(I.matchCausale(by('fin'), by('ris'), causali).causale.code, 'COSFIN', 'costo pagato da Fineco');
   eq(I.matchCausale(by('emo'), by('fin'), causali).causale.code, 'RICFIN', 'ricavo su Fineco');
   eq(I.matchCausale(by('fin'), by('por'), causali).causale.code, 'PREFIN', 'prelievo');
-  ok(/è un ricavo/.test(I.matchCausale(by('fin'), by('emo'), causali).error), 'ricavo dalla parte sbagliata');
+  // storni: una voce di costo in Da (rimborso) o di ricavo in A, con la causale del verso opposto
+  const st = I.matchCausale(by('ris'), by('fin'), causali);
+  eq([st.causale.code, st.account.id, st.storno], ['RICFIN', 'ris', true], 'rimborso di un costo');
+  const sr = I.matchCausale(by('fin'), by('emo'), causali);
+  eq([sr.causale.code, sr.account.id, sr.storno], ['COSFIN', 'emo', true], 'storno di un ricavo');
+  eq(I.matchCausale(by('fin'), by('ris'), causali).storno, false, 'costo normale');
   ok(/Non esiste una causale/.test(I.matchCausale(by('por'), by('ris'), causali).error), 'causale mancante');
   ok(/due voci economiche/.test(I.matchCausale(by('emo'), by('ris'), causali).error));
   // due causali di costo sullo stesso conto: vale il canale standard, oppure la colonna Causale
