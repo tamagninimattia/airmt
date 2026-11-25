@@ -55,7 +55,14 @@ test('movimenti del mese con saldo progressivo', () => {
   const feb = accountLedger(data, r.actual, 'Portafoglio', 2);
   eq(feb.start, port, 'saldo iniziale di febbraio');
   eq(feb.lines[0], { id: 'x', date: '2027-02-10', code: 'PREFIN', label: FIN, note: 'bancomat',
-                     plus: 50, minus: 0, balance: round2(port + 50) }, 'prelievo');
+                     plus: 50, minus: 0, balance: round2(port + 50), provisional: false }, 'prelievo');
+  // movimento provvisorio: compare tra i movimenti ma non cambia saldi
+  const prov = [{ id: 'p', entry_date: '2027-02-05', causale_id: 'PREFIN', debit_account_id: 'Portafoglio',
+                  credit_account_id: FIN, amount: 30, note: null }];
+  const withProv = accountLedger(data, r.actual, 'Portafoglio', 2, { provisional: prov });
+  eq(withProv.lines.map((l) => [l.id, l.provisional, l.balance]), [['p', true, null], ['x', false, round2(port + 50)]], 'in ordine di data, senza saldo');
+  eq(withProv.end, feb.end, 'saldo finale invariato');
+  ok(!accountLedger(data, r.actual, 'Portafoglio', 3, { provisional: prov }).lines.some((l) => l.id === 'p'), 'solo nel suo mese');
   const fin = accountLedger(data, r.actual, FIN, 2);
   eq([fin.lines[0].plus, fin.lines[0].minus, fin.end], [0, 50, round2(data.openings[FIN] - 50)], 'stesso movimento visto da Fineco');
 });

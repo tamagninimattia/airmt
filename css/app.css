@@ -387,6 +387,10 @@ table.grid td.future { opacity: .55; }
 .ledger-head .month-nav { margin: 0; gap: .25rem; }
 .ledger table.list tr.edge td { font-weight: 600; background: var(--surface-2); }
 .ledger td.neg { color: var(--error); }
+.ledger-head label.prov-toggle { margin: 0 0 0 auto; }
+.ledger table.list tr.provisional td { color: var(--prov); font-style: italic; background: var(--prov-bg); }
+.ledger table.list tr.provisional td:first-child { box-shadow: inset 3px 0 0 var(--prov); }
+.ledger table.list tr.provisional .badge { margin-left: .4rem; font-style: normal; }
 
 /* Dashboard */
 main:has(.dash) { max-width: 76rem; }

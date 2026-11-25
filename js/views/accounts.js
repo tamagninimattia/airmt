@@ -1,5 +1,6 @@
 // Partitario (schede conto): per ogni conto patrimoniale, saldo iniziale, variazioni per causale e saldo finale
 // mese per mese (Budget, Progr., Scost.), più i movimenti reali di un mese con il saldo progressivo.
+import { sb, rowsAll } from '../db.js';
 import { h, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget } from '../engine/year.js';
@@ -16,7 +17,15 @@ export async function render(root, { params }) {
   const years = await yearList();
   if (!years.length) return noYear(root, 'Partitario');
   const year = pickYear(years, params[0], +isoDate().slice(0, 4));
-  const data = await loadYear(year);
+  // i movimenti provvisori non sono nei dati dell'anno: si leggono a parte, solo per mostrarli
+  const [data, provisional] = await Promise.all([
+    loadYear(year),
+    rowsAll(() => sb.from('entries')
+      .select('id, entry_date, causale_id, debit_account_id, credit_account_id, amount, note')
+      .eq('provisional', true)
+      .gte('entry_date', `${year}-01-01`).lt('entry_date', `${year + 1}-01-01`)
+      .order('entry_date').order('id'))
+  ]);
   const accounts = sortByOrder(data.accounts.filter((a) => a.type === 'patrimoniale'));
   const id = decodeURIComponent(params[1] || '');
   const account = accounts.find((a) => a.id === id) ?? accounts.find((a) => a.active) ?? accounts[0];
@@ -30,9 +39,19 @@ export async function render(root, { params }) {
     result: { actual: computeActual(data), budget: computeBudget(data) },
     expanded: loadExpanded(year, cur),
     showZero: false,
-    month: cur
+    month: cur,
+    provisional,
+    showProv: loadShowProv()
   };
   draw();
+}
+
+// La scelta "mostra i provvisori" si ricorda nel browser
+function loadShowProv() {
+  try { return localStorage.getItem('partitario.provvisori') === '1'; } catch { return false; }
+}
+function saveShowProv(on) {
+  try { localStorage.setItem('partitario.provvisori', on ? '1' : '0'); } catch { /* ignorato */ }
 }
 
 const href = (year, account) => '#/partitario/' + year + '/' + encodeURIComponent(account.id);
@@ -91,10 +110,14 @@ function draw() {
 function ledgerSection() {
   const { data, account, result } = S;
   const s = sides(account);
-  const { start, lines, end } = accountLedger(data, result.actual, account.id, S.month);
+  const { start, lines, end } = accountLedger(data, result.actual, account.id, S.month,
+    { provisional: S.showProv ? S.provisional : [] });
   const move = (d) => { S.month = Math.min(12, Math.max(1, S.month + d)); draw(); };
   const money = (v) => (v ? fmtAmount(v) : '');
-  const bal = (v) => h('td', { class: 'num' + (v < 0 ? ' neg' : '') }, fmtAmount(v));
+  const bal = (v) => (v == null ? h('td') : h('td', { class: 'num' + (v < 0 ? ' neg' : '') }, fmtAmount(v)));
+  const count = S.provisional.filter((e) => e.debit_account_id === account.id || e.credit_account_id === account.id).length;
+  const prov = h('input', { type: 'checkbox', checked: S.showProv });
+  prov.addEventListener('change', () => { S.showProv = prov.checked; saveShowProv(prov.checked); draw(); });
 
   return h('section', { class: 'ledger', 'aria-labelledby': 'ledger-title' },
     h('div', { class: 'ledger-head' },
@@ -102,7 +125,9 @@ function ledgerSection() {
       h('div', { class: 'month-nav' },
         h('button', { type: 'button', class: 'quiet small', disabled: S.month === 1, onclick: () => move(-1), 'aria-label': 'Mese precedente' }, '‹'),
         h('button', { type: 'button', class: 'quiet small', disabled: S.month === 12, onclick: () => move(1), 'aria-label': 'Mese successivo' }, '›')),
-      h('a', { href: '#/giornale/' + monthParam({ year: data.year, month: S.month }) }, 'Apri nel Giornale')),
+      h('a', { href: '#/giornale/' + monthParam({ year: data.year, month: S.month }) }, 'Apri nel Giornale'),
+      h('label', { class: 'check prov-toggle' }, prov, ` Mostra i movimenti provvisori (${count} nell'anno)`)),
+    S.showProv && h('p', { class: 'hint' }, 'I provvisori sono in lilla: non contano nei saldi, che restano quelli delle registrazioni confermate.'),
     h('div', { class: 'table-wrap' },
       h('table', { class: 'list' },
         h('thead', null, h('tr', null,
@@ -112,9 +137,10 @@ function ledgerSection() {
         h('tbody', null,
           h('tr', { class: 'edge' }, h('td', { colspan: 6 }, 'Saldo iniziale'), bal(start)),
           lines.length
-            ? lines.map((l) => h('tr', null,
+            ? lines.map((l) => h('tr', { class: l.provisional ? 'provisional' : null },
                 h('td', null, fmtDay(l.date)), h('td', null, h('code', null, l.code)), h('td', null, l.label),
-                h('td', { class: 'muted' }, l.note), h('td', { class: 'num' }, money(l.plus)),
+                h('td', { class: 'muted' }, l.note, l.provisional && h('span', { class: 'badge prov' }, 'provvisorio')),
+                h('td', { class: 'num' }, money(l.plus)),
                 h('td', { class: 'num' }, money(l.minus)), bal(l.balance)))
             : h('tr', null, h('td', { colspan: 7, class: 'muted' }, 'Nessun movimento in questo mese.')),
           h('tr', { class: 'edge' }, h('td', { colspan: 6 }, 'Saldo finale'), bal(end))))));

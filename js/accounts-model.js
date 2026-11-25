@@ -88,7 +88,9 @@ export function cardRows(data, { actual, budget }, accountId, { showZero = false
  * Movimenti reali di un conto in un mese, con il saldo progressivo.
  * Ogni riga: { id, date, code, label, note, plus, minus, balance }
  */
-export function accountLedger(data, actual, accountId, month) {
+// provisional: movimenti provvisori da mostrare (in lilla) tra quelli reali; non muovono il saldo
+// progressivo né il saldo finale, che restano quelli del consuntivo (balance = null).
+export function accountLedger(data, actual, accountId, month, { provisional = [] } = {}) {
   const account = data.accounts.find((a) => a.id === accountId);
   const s = sides(account);
   const name = (id) => data.accounts.find((a) => a.id === id)?.name ?? '–';
@@ -97,8 +99,8 @@ export function accountLedger(data, actual, accountId, month) {
   let balance = month === 1 ? Number(data.openings[accountId] || 0) : actual.closing.get(accountId)[month - 2];
   const start = balance;
 
-  const lines = data.entries
-    .filter((e) => e.entry_date.startsWith(prefix) && (e.debit_account_id === accountId || e.credit_account_id === accountId))
+  const mine = (e) => e.entry_date.startsWith(prefix) && (e.debit_account_id === accountId || e.credit_account_id === accountId);
+  const lines = [...data.entries.filter(mine), ...provisional.filter(mine).map((e) => ({ ...e, provisional: true }))]
     .sort((a, b) => a.entry_date.localeCompare(b.entry_date))
     .map((e) => {
       const side = e.debit_account_id === accountId ? 'dare' : 'avere';
@@ -106,10 +108,10 @@ export function accountLedger(data, actual, accountId, month) {
       const amount = Number(e.amount);
       const plus = side === s.plus ? amount : 0;
       const minus = side === s.minus ? amount : 0;
-      balance = round2(balance + plus - minus);
+      if (!e.provisional) balance = round2(balance + plus - minus);
       const c = causale(e.causale_id);
       return { id: e.id, date: e.entry_date, code: c?.code ?? '', label: name(other), note: e.note || '',
-               plus, minus, balance };
+               plus, minus, balance: e.provisional ? null : balance, provisional: Boolean(e.provisional) };
     });
   return { start, lines, end: balance };
 }
