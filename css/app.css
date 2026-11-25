@@ -350,23 +350,24 @@ input.cell {
 input.cell:hover { border-color: var(--warn); }
 input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
 input.cell.reached { background: var(--input-cell-reached); }
-/* "+" nella colonna Progr.: apre il Giornale con la registrazione compilata */
-table.grid td.a a.add {
+/* "+" nella colonna Scost.: apre il Giornale con la registrazione compilata */
+table.grid td.s a.add {
   display: inline-grid; place-items: center; vertical-align: middle; width: 1.3rem; height: 1.3rem; margin-right: .4rem;
   border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; line-height: 1; text-decoration: none;
 }
-table.grid td.a a.add:hover { background: var(--accent); color: var(--on-accent); }
-table.grid td.a a.add:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
-table.grid td.a a.add[hidden] { display: none; }
-/* "=" nella colonna Scost.: porta il budget del mese al consuntivo */
-table.grid td.s button.eq {
+table.grid td.s a.add:hover { background: var(--accent); color: var(--on-accent); }
+table.grid td.s a.add:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+table.grid td.s a.add[hidden] { display: none; }
+/* "←" accanto al budget: porta il budget del mese al consuntivo */
+table.grid td button.sync {
   all: unset; box-sizing: border-box; cursor: pointer; display: inline-grid; place-items: center; vertical-align: middle;
-  width: 1.3rem; height: 1.3rem; margin-right: .4rem; border-radius: 50%;
+  width: 1.3rem; height: 1.3rem; margin-left: .3rem; border-radius: 50%;
   background: var(--surface-muted); color: var(--ink); font-weight: 700; line-height: 1;
 }
-table.grid td.s button.eq:hover { background: var(--accent); color: var(--on-accent); }
-table.grid td.s button.eq:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
-table.grid td.s button.eq[hidden] { display: none; }
+table.grid td button.sync:hover { background: var(--accent); color: var(--on-accent); }
+table.grid td button.sync:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+/* nascosta ma con il suo spazio: le celle gialle della colonna restano allineate */
+table.grid td button.sync.off { visibility: hidden; }
 #msg button.link { color: var(--accent-text); font-weight: 600; }
 /* vuota (placeholder di uno spazio): grigia; mentre ci scrivi torna gialla */
 input.cell:placeholder-shown:not(:focus) { background: var(--input-cell-empty); }

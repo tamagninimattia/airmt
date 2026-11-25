@@ -97,9 +97,13 @@ function rowEl(row, ncols) {
   if (row.type === 'head' || row.type === 'sub') {
     return h('tr', { class: row.type }, h('th', { colspan: ncols, scope: 'colgroup' }, h('span', null, row.label)));
   }
-  const reg = { budget: [], actual: [], scost: [], total: [] };
+  const reg = { budget: [], actual: [], scost: [], total: [], sync: [], add: [] };
   const cells = [labelCell(row)];
+  // righe con budget manuale, nei mesi esplosi: "←" accanto al budget lo porta al consuntivo,
+  // "+" accanto allo scostamento apre il Giornale con la registrazione già compilata
+  const manual = row.edit && row.type === 'line';
   for (let m = 0; m < 12; m++) {
+    const open = S.expanded.has(m);
     if (row.edit) {
       // il placeholder di uno spazio serve al CSS per colorare di grigio le celle vuote
       const input = h('input', { class: 'cell', inputmode: 'decimal', autocomplete: 'off', 'data-m': m, placeholder: ' ',
@@ -108,21 +112,20 @@ function rowEl(row, ncols) {
       input.addEventListener('change', () => commit(row, m, input));
       input.addEventListener('keydown', (ev) => onKey(ev, input, row, m));
       reg.budget[m] = input;
-      cells.push(h('td', { class: 'num mstart' }, input));
+      if (manual && open) {
+        reg.sync[m] = h('button', { type: 'button', class: 'sync off', tabindex: '-1', 'aria-hidden': 'true',
+                                    onclick: () => alignCell(row, m) }, '←');
+      }
+      cells.push(h('td', { class: 'num mstart' }, input, reg.sync[m]));
     } else {
       reg.budget[m] = h('td', { class: 'num mstart' + (row.rule ? ' calc' : '') });
       cells.push(reg.budget[m]);
     }
-    if (S.expanded.has(m)) {
-      // righe con budget manuale: "+" che apre il Giornale con la registrazione già compilata
-      // e "=" che porta il budget del mese al consuntivo
-      const manual = row.edit && row.type === 'line';
-      reg.actual[m] = manual
-        ? h('td', { class: 'num a' }, h('a', { class: 'add', hidden: true }, '+'), h('span', { class: 'v' }))
-        : h('td', { class: 'num a' });
+    if (open) {
+      reg.actual[m] = h('td', { class: 'num a' });
+      if (manual) reg.add[m] = h('a', { class: 'add', hidden: true }, '+');
       reg.scost[m] = manual
-        ? h('td', { class: 'num s' }, h('button', { type: 'button', class: 'eq', hidden: true,
-                                                   onclick: () => alignCell(row, m) }, '='), h('span', { class: 'v' }))
+        ? h('td', { class: 'num s' }, reg.add[m], h('span', { class: 'v' }))
         : h('td', { class: 'num s' });
       cells.push(reg.actual[m], reg.scost[m]);
     }
@@ -161,17 +164,20 @@ function update() {
       if (reg.actual[m]) {
         const a = row.actual?.[m];
         setNum(reg.actual[m], a ?? null, row);
-        const eqBtn = reg.scost[m].querySelector(':scope > button.eq');
-        if (eqBtn) {
+        const sync = reg.sync[m];
+        if (sync) {
           const x = alignToActual(row, m + 1, S.cur);
-          eqBtn.hidden = !x;
+          // invisibile ma con il suo spazio (classe off): le celle gialle restano allineate
+          sync.classList.toggle('off', !x);
+          sync.tabIndex = x ? 0 : -1;
+          if (x) sync.removeAttribute('aria-hidden'); else sync.setAttribute('aria-hidden', 'true');
           if (x) {
             const label = `Porta il budget di ${row.label}, ${MONTHS[m]}, da ${fmtAmount(x.from)} a ${fmtAmount(x.to)} (il consuntivo)`;
-            eqBtn.title = label;
-            eqBtn.setAttribute('aria-label', label);
+            sync.title = label;
+            sync.setAttribute('aria-label', label);
           }
         }
-        const add = reg.actual[m].querySelector(':scope > a.add');
+        const add = reg.add[m];
         if (add) {
           const p = journalPrefill(row, S.data.year, m + 1);
           add.hidden = !p;
