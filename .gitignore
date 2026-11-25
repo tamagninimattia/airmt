@@ -5,3 +5,9 @@ tests/excel-2027.js
 xlsx-tmp/
 tests/expected-2027.js
 verifica-2027.md
+
+# Excel 2026 e file di importazione generati: dati personali
+TM26 Pers.xlsm
+TM26*.xls*
+TM26*.csv
+import-2026*
