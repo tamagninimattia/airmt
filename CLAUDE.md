@@ -74,7 +74,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Le celle da digitare hanno sfondo giallo `#FFFF99` con testo scuro (deciso con Mattia).
 - Scorciatoie: "copia su tutti i mesi" e "dividi il totale annuo" (il resto dell'arrotondamento va sull'ultimo mese; i mesi chiusi restano invariati se si lascia la spunta).
 - Mese corrente del Budget = primo mese non chiuso (quello dopo l'ultimo chiuso).
-- Scostamento: positivo = favorevole, sia per ricavi che per costi (ricavi: Progr. − Budget; costi: Budget − Progr.). Per le causali finanziarie vale come per i costi: Budget − Progr. (deciso con Mattia).
+- Scostamento: positivo = favorevole, sia per ricavi che per costi (ricavi: Progr. − Budget; costi: Budget − Progr.). Nelle griglie i favorevoli sono verdi e gli sfavorevoli rossi (deciso con Mattia). Per le causali finanziarie vale come per i costi: Budget − Progr. (deciso con Mattia).
 - Le causali finanziarie (prelievi, trasferimenti, investimenti, anticipi MT, CSC) hanno budget manuale. Fanno eccezione le tre con `budget_rule`, il cui budget è calcolato dall'app e non si inserisce a mano: `GCCCRED`, `ADDCCRED` (vedi "Carta di credito") e `RIMMT`. Tra le voci economiche è calcolata solo quella degli imprevisti (vedi sotto).
 - `RIMMT` (rimborsi MT Prof.le, `budget_rule = 'mt_rimborso'`): gennaio = saldo iniziale di "Crediti vs MT Prof.le"; da febbraio = `ANTFIN` + `ANTPOR` del mese precedente, perché gli anticipi vengono rimborsati il mese dopo. Se cambiano gli anticipi, i rimborsi si aggiornano da soli.
 

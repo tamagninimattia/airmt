@@ -19,6 +19,10 @@ test('rosso solo dove serve, anche ripetendo l\'aggiornamento', () => {
   eq(state(td), ['10,00', false, false], 'tornato positivo');
   setNum(td, -5, { type: 'line', kind: 'costo' }, { scost: true });
   eq(state(td), ['−5,00', true, false], 'scostamento sfavorevole');
+  setNum(td, 5, { type: 'line', kind: 'ricavo' }, { scost: true });
+  eq(state(td), ['5,00', false, true], 'scostamento favorevole in verde');
+  setNum(td, 0, { type: 'line', kind: 'costo' }, { scost: true });
+  eq(state(td), ['', false, false], 'nessuno scostamento');
   const check = { type: 'check' };
   setNum(td, 0, check);
   eq(state(td), ['0,00', false, true], 'quadratura a zero');

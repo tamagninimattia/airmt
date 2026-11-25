@@ -46,13 +46,14 @@ export function monthHeader({ expanded, cur, closed, onToggle, label = 'Voce' })
 
 // Testo e colori di una cella numerica. Nelle righe di dettaglio lo zero resta vuoto.
 // Rosso: scostamento sfavorevole, controllo diverso da 0, saldo negativo (righe con negRed).
+// Verde: scostamento favorevole (ricavi sopra il budget, costi sotto), controllo a 0.
 export function setNum(td, v, row, { scost = false } = {}) {
   const quiet = row.type === 'line' || row.type === 'var';
   const text = v == null || (v === 0 && quiet) ? '' : fmtAmount(v);
   if (td.textContent !== text) td.textContent = text;
   // toggle con un secondo argomento non booleano inverte la classe: va sempre forzato a true/false
   td.classList.toggle('bad', Boolean(v != null && ((scost && v < 0) || (row.type === 'check' && v !== 0) || (!scost && row.negRed && v < 0))));
-  td.classList.toggle('good', Boolean(v != null && row.type === 'check' && v === 0));
+  td.classList.toggle('good', Boolean(v != null && ((scost && v > 0) || (row.type === 'check' && v === 0))));
 }
 
 // Scostamento di una cella, null se la riga non lo prevede
