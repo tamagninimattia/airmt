@@ -88,7 +88,7 @@ function draw() {
   S.cells = new Map();
   S.status = h('ul', { class: 'checks', role: 'status' });
 
-  const table = h('table', { class: 'grid' },
+  const table = h('table', { class: 'grid edit' },
     monthHeader({ expanded: S.expanded, cur: S.cur, closed, onToggle: toggleMonth }),
     h('tbody', null, S.rows.map((row) => rowEl(row, ncols))));
 
@@ -146,7 +146,7 @@ function rowEl(row, ncols) {
       reg.actual[m] = h('td', { class: 'num a' });
       if (manual) reg.add[m] = h('a', { class: 'add', hidden: true }, '+');
       reg.scost[m] = manual
-        ? h('td', { class: 'num s' }, reg.add[m], h('span', { class: 'v' }))
+        ? h('td', { class: 'num s' }, h('span', { class: 'v' }), reg.add[m])
         : h('td', { class: 'num s' });
       cells.push(reg.actual[m], reg.scost[m]);
     }
@@ -159,9 +159,8 @@ function rowEl(row, ncols) {
 
 function labelCell(row) {
   return h('th', { scope: 'row', class: 'label' },
-    h('span', { class: 'name' }, row.label),
-    row.code && h('code', null, row.code),
-    row.calc && h('span', { class: 'badge', title: row.calc }, 'calcolato'),
+    // le voci calcolate spiegano la regola passando sopra al nome
+    h('span', { class: 'name' + (row.calc ? ' calc-name' : ''), title: row.calc || null }, row.label),
     row.contingency && h('span', { class: 'badge' }, 'imprevisti'),
     row.noChannel && h('span', { class: 'badge warn-badge', title: 'Senza canale standard il budget di questa voce non muove nessun conto: impostalo nelle Impostazioni.' }, 'senza canale'),
     row.edit && row.type === 'line' && h('button', { type: 'button', class: 'row-menu',

@@ -350,9 +350,13 @@ input.cell {
 input.cell:hover { border-color: var(--warn); }
 input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
 input.cell.reached { background: var(--input-cell-reached); }
-/* "+" nella colonna Scost.: apre il Giornale con la registrazione compilata */
+/* "+" nella colonna Scost., a destra del numero in uno spazio riservato (i numeri restano in colonna):
+   apre il Giornale con la registrazione compilata */
+table.grid.edit td.s { position: relative; padding-right: 2.1rem; }
+table.grid.edit th.label .calc-name { font-style: italic; cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
 table.grid td.s a.add {
-  display: inline-grid; place-items: center; vertical-align: middle; width: 1.3rem; height: 1.3rem; margin-right: .4rem;
+  position: absolute; right: .35rem; top: 50%; transform: translateY(-50%);
+  display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem;
   border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; line-height: 1; text-decoration: none;
 }
 table.grid td.s a.add:hover { background: var(--accent); color: var(--on-accent); }
