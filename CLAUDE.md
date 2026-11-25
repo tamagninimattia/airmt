@@ -70,6 +70,8 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Tabelle: `budget_accounts` (per conto economico), `budget_causali` (per causale finanziaria), `channel_adjustments` (Var +/-).
 - Griglia anno × 12 mesi, con colonne Budget, Progr. (consuntivo del mese) e Scost. per ogni mese, e totale annuo. Il budget è sempre modificabile a mano.
 - Vista della griglia: di base si vedono i 12 budget e il totale, con esploso (Budget, Progr., Scost.) solo il mese corrente, cioè l'ultimo non chiuso. Ogni altro mese si può esplodere a richiesta.
+- Righe a zero (budget, Progr. e Var tutti a 0 nell'anno) nascoste, comprese le voci attive e le causali calcolate; si vedono con "Mostra anche le righe a zero", che serve anche per scrivere il budget di una voce nuova (deciso con Mattia).
+- Le celle da digitare hanno sfondo giallo `#FFFF99` con testo scuro (deciso con Mattia).
 - Scorciatoie: "copia su tutti i mesi" e "dividi il totale annuo" (il resto dell'arrotondamento va sull'ultimo mese; i mesi chiusi restano invariati se si lascia la spunta).
 - Mese corrente del Budget = primo mese non chiuso (quello dopo l'ultimo chiuso).
 - Scostamento: positivo = favorevole, sia per ricavi che per costi (ricavi: Progr. − Budget; costi: Budget − Progr.). Per le causali finanziarie vale come per i costi: Budget − Progr. (deciso con Mattia).

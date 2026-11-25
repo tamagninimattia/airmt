@@ -29,6 +29,10 @@
   --field-border: #57564f;
   --var-row: #2d2d2b;
   --saving: rgb(240 180 41 / .16);
+  --input-cell: #ffff99;              /* celle da digitare del Budget (deciso con Mattia) */
+  --input-cell-saving: #ebeb7a;
+  --on-input-cell: #1f1e1d;
+  --on-input-cell-error: #b3261e;
   --c-actual: #3987e5;                /* grafici: palette validata per lo sfondo scuro */
   --c-budget: #d95926;
   --radius: 6px;
@@ -300,12 +304,13 @@ table.grid th.label .badge { font-size: .7rem; }
 button.row-menu { all: unset; cursor: pointer; float: right; padding: 0 .4rem; margin-left: .3rem; border-radius: 4px; color: var(--muted); font-weight: 600; }
 button.row-menu:hover, button.row-menu:focus-visible { background: var(--surface-muted); color: var(--ink); }
 input.cell {
-  width: 6.2rem; min-height: 0; padding: .15rem .3rem; text-align: right; font: inherit; color: var(--ink);
-  border: 1px solid transparent; border-radius: 4px; background: transparent;
+  width: 6.2rem; min-height: 0; padding: .15rem .3rem; text-align: right; font: inherit; color: var(--on-input-cell);
+  border: 1px solid transparent; border-radius: 4px; background: var(--input-cell);
 }
-input.cell:hover { border-color: var(--line); }
-input.cell:focus { border-color: var(--accent); background: var(--field-bg); outline: none; box-shadow: 0 0 0 2px var(--focus); }
-input.cell.saving { background: var(--saving); }
+input.cell:hover { border-color: var(--warn); }
+input.cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
+input.cell.saving { background: var(--input-cell-saving); }
+input.cell[aria-invalid=true] { border-color: var(--on-input-cell-error); box-shadow: 0 0 0 2px var(--error); }
 button.align { all: unset; cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 999px; padding: 0 .5rem; }
 button.align:focus-visible { outline: 3px solid var(--focus); }
 .ok-mark { color: var(--good); }

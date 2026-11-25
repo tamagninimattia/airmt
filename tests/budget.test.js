@@ -52,14 +52,14 @@ test('righe modificabili e calcolate', () => {
   ok(rows.get('acc-Spese indivise non preventivate').calc, 'con la spiegazione del calcolo');
 });
 
-test('righe a zero: voci attive sempre visibili, causali a zero solo a richiesta', () => {
+test('righe a zero: nascoste, visibili solo a richiesta', () => {
   const rows = byKey(grid(year2027()));
-  ok(rows.has('acc-Aperitivi'), 'voce attiva a zero');
+  ok(!rows.has('acc-Aperitivi'), 'voce attiva a zero nascosta');
   ok(!rows.has('fin-PRETR'), 'causale finanziaria a zero nascosta');
   ok(!rows.has('ch-COSSAT'), 'canale a zero nascosto');
   ok(rows.has('ch-COSCCRED') && rows.has('var-COSCCRED'), 'canale con budget e la sua Var');
   const all = byKey(grid(year2027(), { showZero: true }));
-  ok(all.has('fin-PRETR') && all.has('ch-COSSAT') && all.has('var-COSSAT'), 'con «mostra righe a zero»');
+  ok(all.has('acc-Aperitivi') && all.has('fin-PRETR') && all.has('ch-COSSAT') && all.has('var-COSSAT'), 'con «mostra righe a zero»');
   // una registrazione rende visibile anche un canale senza budget
   const withEntries = byKey(grid(year2027({ entries: [{ entry_date: '2027-02-03', causale_id: 'COSSAT',
     debit_account_id: 'Caffè', credit_account_id: 'Satispay', amount: 1.5 }] })));

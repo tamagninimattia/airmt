@@ -42,7 +42,8 @@ export function channelName(causale, accounts) {
  */
 export function buildRows(data, { actual, budget }, { showZero = false, alignCounts = zeros() } = {}) {
   const rows = [];
-  const show = (item, ...series) => showZero || series.some(nonzero) || (item.active && item.type === 'economico');
+  // senza «mostra righe a zero» compaiono solo le righe con almeno un valore (budget, Progr. o Var)
+  const show = (...series) => showZero || series.some(nonzero);
 
   // --- conti economici, per sezione del Budget ---
   for (const kind of ['ricavo', 'costo']) {
@@ -51,7 +52,7 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
     const list = sortByOrder(data.accounts.filter((a) => a.type === 'economico' && a.kind === kind));
     const sections = groupBy(list, (a) => a.budget_section || 'Senza sezione');
     for (const [section, items] of sections) {
-      const visible = items.filter((a) => show(a, get(budget.econ, a.id), get(actual.econ, a.id)));
+      const visible = items.filter((a) => show(get(budget.econ, a.id), get(actual.econ, a.id)));
       if (!visible.length) continue;
       if (sections.size > 1) rows.push({ key: `sub-${kind}-${section}`, type: 'sub', label: section });
       for (const a of visible) {
@@ -76,7 +77,7 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
       const b = get(budget.channels, c.id);
       const a = get(actual.causali, c.id);
       const v = get(budget.adjustments, c.id);
-      if (!show(c, b, a, v)) continue;
+      if (!show(b, a, v)) continue;
       rows.push({ key: 'ch-' + c.id, type: 'line', label: 'di cui ' + channelName(c, data.accounts), code: c.code,
                   kind, budget: b, actual: a, inactive: !c.active, total: 'sum' });
       rows.push({ key: 'var-' + c.id, type: 'var', label: 'Var +/-', code: c.code, budget: v,
@@ -90,7 +91,7 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
   rows.push({ key: 'head-fin', type: 'head', label: 'Causali finanziarie' });
   const fin = sortByOrder(data.causali.filter((c) => c.kind === 'finanziaria'), 'code');
   for (const [grp, items] of groupBy(fin, (c) => c.grp || 'Senza gruppo')) {
-    const visible = items.filter((c) => c.budget_rule || show(c, get(budget.causali, c.id), get(actual.causali, c.id)));
+    const visible = items.filter((c) => show(get(budget.causali, c.id), get(actual.causali, c.id)));
     if (!visible.length) continue;
     rows.push({ key: 'sub-fin-' + grp, type: 'sub', label: grp });
     for (const c of visible) {
