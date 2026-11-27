@@ -4,7 +4,7 @@ import { EXCEL_2027 as X } from './excel-2027.js';
 import { E } from './expected-2027.js';
 import { year2027, PROVA_GIORNALE } from './fixture-2027.js';
 import { computeActual, computeBudget } from '../js/engine/year.js';
-import { cardRows, accountLedger, positionRows, causaleSide } from '../js/accounts-model.js';
+import { cardRows, accountLedger, positionRows, causaleSide, negativeBudgets } from '../js/accounts-model.js';
 import { round2 } from '../js/format.js';
 
 const result = (data) => ({ actual: computeActual(data), budget: computeBudget(data) });
@@ -110,4 +110,18 @@ test('situazione patrimoniale: consuntivo di gennaio con il Giornale di prova', 
   eq(rows.get('posizione').actual[0], X.actualJanuary.posizione, 'posizione (G365)');
   eq(rows.get('risultato').actual[0], round2(X.actualJanuary.ricavi - X.actualJanuary.costi), 'risultato progressivo (G367)');
   eq(rows.get('quadratura').actual, new Array(12).fill(0), 'quadratura');
+});
+
+test('conti con budget negativo in almeno un mese', () => {
+  const data = year2027();
+  const r = result(data);
+  const neg = negativeBudgets(data, r.budget);
+  for (const { account, months } of neg) {
+    ok(months.every((m) => r.budget.closing.get(account.id)[m] < 0), account.name + ': solo i mesi sotto zero');
+  }
+  // un conto spinto sotto zero a marzo compare con quel mese
+  const closing = new Map(r.budget.closing);
+  closing.set(FIN, closing.get(FIN).map((v, m) => (m === 2 ? -1 : Math.abs(v))));
+  const fin = negativeBudgets(data, { closing }).find((x) => x.account.id === FIN);
+  eq(fin.months, [2], 'Fineco a marzo');
 });

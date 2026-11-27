@@ -121,6 +121,14 @@ export function accountLedger(data, accountId, { provisional = [] } = {}) {
   return { start, lines, end: balance };
 }
 
+// Conti patrimoniali con saldo di budget negativo a fine mese, anche in un solo mese:
+// [{ account, months: [indici 0–11] }] nell'ordine dei conti
+export function negativeBudgets(data, budget) {
+  return sortByOrder(data.accounts.filter((a) => a.type === 'patrimoniale'))
+    .map((account) => ({ account, months: (budget.closing.get(account.id) ?? []).flatMap((v, m) => (v < 0 ? [m] : [])) }))
+    .filter((x) => x.months.length);
+}
+
 /**
  * Situazione patrimoniale: saldi di fine mese per gruppo, totali, posizione e quadratura.
  * hrefFor(account) dà il collegamento alla scheda del conto.

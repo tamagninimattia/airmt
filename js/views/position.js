@@ -3,7 +3,7 @@ import { h, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget } from '../engine/year.js';
 import { currentMonth } from '../budget-model.js';
-import { positionRows } from '../accounts-model.js';
+import { positionRows, negativeBudgets } from '../accounts-model.js';
 import { loadExpanded, saveExpanded, readGrid } from '../grid.js';
 import { MONTHS, isoDate } from '../format.js';
 
@@ -24,9 +24,9 @@ export async function render(root, { params }) {
 function draw() {
   const { data, result } = S;
   const closed = new Set(data.months.filter((m) => m.closed).map((m) => m.month - 1));
-  const rows = positionRows(data, result, {
-    hrefFor: (a) => '#/partitario/' + data.year + '/' + encodeURIComponent(a.id)
-  });
+  const href = (a) => '#/partitario/' + data.year + '/' + encodeURIComponent(a.id);
+  const rows = positionRows(data, result, { hrefFor: href });
+  const negatives = negativeBudgets(data, result.budget);
   const grid = readGrid({ rows, expanded: S.expanded, cur: S.cur, closed, label: 'Conto',
     onToggle: (m) => {
       if (S.expanded.has(m)) S.expanded.delete(m); else S.expanded.add(m);
@@ -46,7 +46,13 @@ function draw() {
         S.years.map((y) => h('a', { href: '#/patrimonio/' + y, 'aria-current': y === data.year ? 'page' : null }, y)))),
     h('ul', { class: 'checks', role: 'status' },
       check('Quadratura del consuntivo', result.actual.quadratura),
-      check('Quadratura del budget', result.budget.quadratura)),
+      check('Quadratura del budget', result.budget.quadratura),
+      // un conto che a budget va sotto zero anche in un solo mese va segnalato
+      negatives.length
+        ? negatives.map(({ account, months: ms }) => h('li', { class: 'warn' },
+            h('a', { href: href(account) }, account.name), ': budget negativo a fine ' +
+            (ms.length === 12 ? 'di tutti i mesi' : ms.map((m) => MONTHS[m]).join(', ')) + '.'))
+        : h('li', { class: 'ok' }, 'Nessun conto con budget negativo.')),
     h('p', { class: 'hint' }, 'Saldi a fine mese: Budget concatenato con il budget, Progr. con il consuntivo. Clicca un conto per aprirne la scheda.'),
     h('div', { class: 'grid-wrap' }, grid)));
 }
