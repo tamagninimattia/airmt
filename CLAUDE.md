@@ -84,6 +84,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - "←" accanto alla cella del budget (deciso con Mattia; prima era "=" nella colonna Scost.): stesse righe del "+", nei mesi esplosi fino al corrente, quando budget e consuntivo differiscono; porta il budget del mese al consuntivo (anche a 0: "non arriva più nulla"), subito, con "Annulla" nel messaggio (`alignToActual`). La differenza passa agli imprevisti dei mesi aperti.
 - Le scelte "Mostra anche le righe a zero" e "Mostra i movimenti provvisori" (Budget e Partitario) sono interruttori (`input.switch`: pillola verde aurora quando attivi) accanto al titolo della pagina (deciso con Mattia).
 - Colonna Voce senza badge "calcolato" né codici causale (deciso con Mattia): le voci calcolate hanno il nome in corsivo e la regola si legge passandoci sopra.
+- Il nome di ogni voce economica (imprevisti esclusi) apre il suo partitario (`#/partitario/<anno>/<id>`), come i conti nella scheda Patrimonio (deciso con Mattia).
 - Scorciatoie: "copia su tutti i mesi" e "dividi il totale annuo" (il resto dell'arrotondamento va sull'ultimo mese; i mesi chiusi restano invariati se si lascia la spunta).
 - Mese corrente del Budget = primo mese non chiuso (quello dopo l'ultimo chiuso).
 - Scostamento: positivo = favorevole, sia per ricavi che per costi (ricavi: Progr. − Budget; costi: Budget − Progr.). Nelle griglie i favorevoli sono verdi e gli sfavorevoli rossi (deciso con Mattia). Per le causali finanziarie vale come per i costi: Budget − Progr. (deciso con Mattia).

@@ -56,7 +56,7 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
       if (!visible.length) continue;
       if (sections.size > 1) rows.push({ key: `sub-${kind}-${section}`, type: 'sub', label: section });
       for (const a of visible) {
-        rows.push({ key: 'acc-' + a.id, type: 'line', label: a.name, kind,
+        rows.push({ key: 'acc-' + a.id, type: 'line', label: a.name, kind, accountId: a.id,
                     budget: get(budget.econ, a.id), actual: get(actual.econ, a.id),
                     edit: a.is_contingency ? null : { table: 'budget_accounts', id: a.id },
                     contingency: a.is_contingency, calc: a.is_contingency ? CONTINGENCY_CALC : null,

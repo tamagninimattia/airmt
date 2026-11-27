@@ -160,7 +160,11 @@ function rowEl(row, ncols) {
 function labelCell(row) {
   return h('th', { scope: 'row', class: 'label' },
     // le voci calcolate spiegano la regola passando sopra al nome
-    h('span', { class: 'name' + (row.calc ? ' calc-name' : ''), title: row.calc || null }, row.label),
+    // le voci economiche aprono il loro partitario (gli imprevisti no: sono solo budget, senza movimenti)
+    row.accountId && !row.contingency
+      ? h('a', { class: 'name', href: '#/partitario/' + S.data.year + '/' + encodeURIComponent(row.accountId),
+                 title: 'Apri il partitario di ' + row.label }, row.label)
+      : h('span', { class: 'name' + (row.calc ? ' calc-name' : ''), title: row.calc || null }, row.label),
     row.contingency && h('span', { class: 'badge' }, 'imprevisti'),
     row.noChannel && h('span', { class: 'badge warn-badge', title: 'Senza canale standard il budget di questa voce non muove nessun conto: impostalo nelle Impostazioni.' }, 'senza canale'),
     row.edit && row.type === 'line' && h('button', { type: 'button', class: 'row-menu',
