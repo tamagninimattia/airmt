@@ -366,7 +366,12 @@ table.grid th.label code { margin-left: .4rem; font-size: .75rem; }
 table.grid th.label .badge { font-size: .7rem; }
 .warn-badge { background: var(--warn-bg); color: var(--warn-ink); }
 /* Budget: colonna Voce più stretta, così la griglia sta nello schermo senza scorrere (nomi lunghi troncati, interi passandoci sopra) */
-@media (min-width: 40.01rem) { table.grid.edit th.label { width: 13rem; min-width: 13rem; max-width: 13rem; } }
+@media (min-width: 40.01rem) { table.grid.edit th.label { width: var(--label-w, 13rem); min-width: var(--label-w, 13rem); max-width: var(--label-w, 13rem); } }
+/* bordo destro dell'intestazione della colonna dei nomi: si trascina per cambiarne la larghezza */
+table.grid th.corner .col-resize { position: absolute; top: 0; right: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 4; touch-action: none; }
+table.grid th.corner .col-resize::after { content: ""; position: absolute; top: 20%; bottom: 20%; right: 0; width: 3px; border-radius: 2px; background: var(--line); }
+table.grid th.corner .col-resize:hover::after, table.grid.resizing th.corner .col-resize::after { background: var(--accent); }
+table.grid.resizing { cursor: col-resize; user-select: none; }
 button.row-menu { all: unset; cursor: pointer; float: right; padding: 0 .4rem; margin-left: .3rem; border-radius: 4px; color: var(--muted); font-weight: 600; }
 button.row-menu:hover, button.row-menu:focus-visible { background: var(--surface-muted); color: var(--ink); }
 input.cell {
@@ -557,6 +562,7 @@ table.rec td:last-child { width: 40%; }
   h1 { font-size: 1.45rem; }
   /* griglie a 12 mesi: colonna dei nomi più stretta, il resto scorre */
   table.grid th.label { min-width: 9.5rem; max-width: 11rem; }
+  table.grid th.corner .col-resize { display: none; }
   table.grid th.label code, table.grid th.label .badge { display: none; }
   .grid-wrap { max-height: calc(100vh - 9rem); }
   /* niente zoom automatico di iOS: i campi devono essere almeno a 16px */

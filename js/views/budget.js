@@ -5,7 +5,7 @@ import { $, h, say, clearMsg, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear, loadProvisional } from '../data.js';
 import { computeActual, computeBudget, budgetSummary, suggestAdjustments, spreadTotal } from '../engine/year.js';
 import { buildRows, rowTotal, currentMonth, alignmentByMonth, channelName, journalPrefill, alignToActual, provisionalMarks } from '../budget-model.js';
-import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached } from '../grid.js';
+import { loadExpanded, saveExpanded, monthHeader, columnCount, setNum, cellVariance, budgetReached, resizableLabel } from '../grid.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate } from '../format.js';
 
 // Dove sta, nei dati caricati, ogni tabella di budget modificabile
@@ -91,6 +91,7 @@ function draw() {
   const table = h('table', { class: 'grid edit' },
     monthHeader({ expanded: S.expanded, cur: S.cur, closed, onToggle: toggleMonth }),
     h('tbody', null, S.rows.map((row) => rowEl(row, ncols))));
+  resizableLabel(table, 'budget.voce');
 
   const showZero = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: S.showZero });
   showZero.addEventListener('change', () => { S.showZero = showZero.checked; recompute(); draw(); });
@@ -107,7 +108,7 @@ function draw() {
         h('label', { class: 'check' }, prov, ` Mostra i movimenti provvisori (${S.provisional.length})`))),
     S.status,
     S.showProv && h('p', { class: 'hint prov-hint' }, 'Il Progr. in lilla comprende movimenti provvisori: è una previsione, non entra in Var, controlli, Dashboard e Chiusure.'),
-    h('p', { class: 'hint' }, 'Clicca un mese per esploderlo. Scrivi nelle celle per cambiare il budget: si salva da solo, Invio passa alla riga sotto. Con ⋯ copi un importo su tutti i mesi o dividi il totale annuo.'),
+    h('p', { class: 'hint' }, 'Clicca un mese per esploderlo. Scrivi nelle celle per cambiare il budget: si salva da solo, Invio passa alla riga sotto. Con ⋯ copi un importo su tutti i mesi o dividi il totale annuo. Trascina il bordo destro di «Voce» per allargare la colonna.'),
     h('div', { class: 'grid-wrap' }, table)));
 
   update();

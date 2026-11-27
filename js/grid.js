@@ -20,6 +20,42 @@ export function saveExpanded(year, expanded) {
   try { localStorage.setItem('budget.expanded.' + year, JSON.stringify([...expanded])); } catch { /* ignorato */ }
 }
 
+// Colonna dei nomi ridimensionabile come in Excel: si trascina il bordo destro dell'intestazione,
+// doppio clic per tornare alla larghezza di base. La larghezza (px) si ricorda nel browser con "key".
+export function resizableLabel(table, key, { min = 120, max = 640 } = {}) {
+  const corner = table.querySelector('th.corner');
+  if (!corner) return;
+  const apply = (px) => table.style.setProperty('--label-w', px ? px + 'px' : null);
+  let saved = null;
+  try { saved = Number(localStorage.getItem(key)) || null; } catch { /* ignorato */ }
+  apply(saved);
+
+  const grip = h('span', { class: 'col-resize', role: 'separator', 'aria-orientation': 'vertical',
+                           title: 'Trascina per allargare o stringere la colonna (doppio clic: larghezza di base)' });
+  grip.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
+    grip.setPointerCapture(ev.pointerId);
+    const startX = ev.clientX;
+    const startW = corner.getBoundingClientRect().width;
+    table.classList.add('resizing');
+    const move = (e) => apply(Math.round(Math.min(max, Math.max(min, startW + e.clientX - startX))));
+    const up = () => {
+      grip.removeEventListener('pointermove', move);
+      table.classList.remove('resizing');
+      const w = parseInt(table.style.getPropertyValue('--label-w'), 10);
+      try { if (w) localStorage.setItem(key, String(w)); } catch { /* ignorato */ }
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', up, { once: true });
+    grip.addEventListener('pointercancel', up, { once: true });
+  });
+  grip.addEventListener('dblclick', () => {
+    apply(null);
+    try { localStorage.removeItem(key); } catch { /* ignorato */ }
+  });
+  corner.append(grip);
+}
+
 export function columnCount(expanded) {
   return 1 + [...Array(12).keys()].reduce((n, m) => n + (expanded.has(m) ? 3 : 1), 0) + 3;
 }
