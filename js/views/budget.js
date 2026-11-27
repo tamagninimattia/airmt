@@ -92,9 +92,9 @@ function draw() {
     monthHeader({ expanded: S.expanded, cur: S.cur, closed, onToggle: toggleMonth }),
     h('tbody', null, S.rows.map((row) => rowEl(row, ncols))));
 
-  const showZero = h('input', { type: 'checkbox', checked: S.showZero });
+  const showZero = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: S.showZero });
   showZero.addEventListener('change', () => { S.showZero = showZero.checked; recompute(); draw(); });
-  const prov = h('input', { type: 'checkbox', checked: S.showProv });
+  const prov = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: S.showProv });
   prov.addEventListener('change', () => { S.showProv = prov.checked; saveShowProv(prov.checked); recompute(); draw(); });
 
   S.root.replaceChildren(h('div', { class: 'budget' },

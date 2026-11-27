@@ -35,6 +35,7 @@
   --input-cell-saving: #ebeb7a;
   --input-cell-reached: #99ffcc;      /* budget raggiunto: consuntivo = budget (deciso con Mattia) */
   --input-cell-empty: #bfbfbf;        /* cella da digitare ancora vuota (deciso con Mattia) */
+  --switch-knob: #ffffff;             /* pallino degli interruttori attivi */
   --input-cell-calc: #cce5ff;         /* causale calcolata, valore non scritto a mano */
   --on-input-cell: #1f1e1d;
   --on-input-cell-error: #b3261e;
@@ -310,7 +311,7 @@ main:has(.budget) { max-width: none; }
 .budget-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; }
 .budget-head h1 { margin: 0; }
 .budget-head .tabs { margin: 0; border: 0; }
-.budget-head label.check { margin: 0 0 0 auto; }
+.budget-head label.check { margin: 0; }
 ul.checks { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem .6rem; padding: 0; margin: .9rem 0 .4rem; }
 ul.checks li { padding: .25rem .6rem; border-radius: 999px; font-size: .86rem; background: var(--good-soft); color: var(--good); }
 ul.checks li.warn { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn); }
@@ -402,10 +403,10 @@ table.grid td.future { opacity: .55; }
 .ledger-head .month-nav { margin: 0; gap: .25rem; }
 .ledger table.list tr.edge td { font-weight: 600; background: var(--surface-2); }
 .ledger td.neg { color: var(--error); }
-.ledger-head label.prov-toggle { margin: 0 0 0 auto; }
+.ledger-head label.prov-toggle { margin: 0; }
 /* Budget: Progr. che comprende movimenti provvisori */
 table.grid td.a.prov { color: var(--prov); font-style: italic; background: var(--prov-bg); }
-.budget-head .head-checks { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; }
+.budget-head .head-checks { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.25rem; }
 .budget-head .head-checks label.check { margin: 0; }
 .prov-hint { color: var(--prov); }
 .ledger table.list tr.provisional td { color: var(--prov); font-style: italic; background: var(--prov-bg); }
@@ -536,7 +537,7 @@ table.rec td:last-child { width: 40%; }
   .tile-value { font-size: 1.3rem; }
   .month-strip a { padding: .5rem .75rem; }
   .budget-head label.check { margin: 0; }
-  .budget-head .head-checks { margin-left: 0; align-items: flex-start; }
+  .budget-head .head-checks { align-items: flex-start; }
   .budget-head select { min-width: 0; width: 100%; }
   /* Giornale: pulsanti larghi e facili da toccare */
   .entry-form .actions button { flex: 1 1 auto; min-height: 2.9rem; }
@@ -579,3 +580,19 @@ table.grid tr.head th .name, table.grid tr.sub th .name { max-width: none; }
 .imports li small { color: var(--muted); }
 table.map-table select { min-width: 14rem; }
 table.list tr.dup td { color: var(--warn-ink); }
+
+/* Interruttori (caselle "Mostra …" di Budget e Partitario): pillola verde aurora quando attivi */
+input[type=checkbox].switch {
+  appearance: none; -webkit-appearance: none; position: relative; flex: none; cursor: pointer;
+  width: 2.6rem; height: 1.45rem; margin: 0 .55rem 0 0; border-radius: 999px;
+  background: var(--field-border); border: 0; transition: background .15s;
+}
+input[type=checkbox].switch::before {
+  content: ''; position: absolute; top: .2rem; left: .2rem; width: 1.05rem; height: 1.05rem;
+  border-radius: 50%; background: var(--ink); transition: transform .15s;
+}
+input[type=checkbox].switch:checked { background: var(--accent); }
+input[type=checkbox].switch:checked::before { transform: translateX(1.15rem); background: var(--switch-knob); }
+input[type=checkbox].switch:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { input[type=checkbox].switch, input[type=checkbox].switch::before { transition: none; } }
+label.check:has(> .switch) { cursor: pointer; }

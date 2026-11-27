@@ -62,8 +62,12 @@ function draw() {
     }));
   picker.addEventListener('change', () => { location.hash = href(data.year, { id: picker.value }); });
 
-  const showZero = h('input', { type: 'checkbox', checked: S.showZero });
+  const showZero = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: S.showZero });
   showZero.addEventListener('change', () => { S.showZero = showZero.checked; draw(); });
+  // interruttore dei provvisori: vale per i movimenti del mese qui sotto
+  const count = S.provisional.filter((e) => e.debit_account_id === account.id || e.credit_account_id === account.id).length;
+  const prov = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: S.showProv });
+  prov.addEventListener('change', () => { S.showProv = prov.checked; saveShowProv(prov.checked); draw(); });
 
   const rows = cardRows(data, result, account.id, { showZero: S.showZero });
   const grid = readGrid({ rows, expanded: S.expanded, cur: S.cur, closed, label: account.name,
@@ -83,7 +87,9 @@ function draw() {
       S.years.length > 1 && h('nav', { class: 'tabs', 'aria-label': 'Anni' },
         S.years.map((y) => h('a', { href: href(y, account), 'aria-current': y === data.year ? 'page' : null }, y))),
       picker,
-      h('label', { class: 'check' }, showZero, ' Mostra anche le causali senza movimenti')),
+      h('div', { class: 'head-checks' },
+        h('label', { class: 'check' }, showZero, ' Mostra anche le causali senza movimenti'),
+        h('label', { class: 'check' }, prov, ` Mostra i movimenti provvisori (${count} nell'anno)`))),
     h('ul', { class: 'checks' },
       h('li', { class: closing < 0 ? 'warn' : 'ok' },
         `Saldo a fine ${MONTHS[m]}: ${fmtAmount(closing)} € (budget ${fmtAmount(planned)} €)`),
@@ -107,9 +113,6 @@ function ledgerSection() {
   const move = (d) => { S.month = Math.min(12, Math.max(1, S.month + d)); draw(); };
   const money = (v) => (v ? fmtAmount(v) : '');
   const bal = (v) => (v == null ? h('td') : h('td', { class: 'num' + (v < 0 ? ' neg' : '') }, fmtAmount(v)));
-  const count = S.provisional.filter((e) => e.debit_account_id === account.id || e.credit_account_id === account.id).length;
-  const prov = h('input', { type: 'checkbox', checked: S.showProv });
-  prov.addEventListener('change', () => { S.showProv = prov.checked; saveShowProv(prov.checked); draw(); });
 
   return h('section', { class: 'ledger', 'aria-labelledby': 'ledger-title' },
     h('div', { class: 'ledger-head' },
@@ -117,8 +120,7 @@ function ledgerSection() {
       h('div', { class: 'month-nav' },
         h('button', { type: 'button', class: 'quiet small', disabled: S.month === 1, onclick: () => move(-1), 'aria-label': 'Mese precedente' }, '‹'),
         h('button', { type: 'button', class: 'quiet small', disabled: S.month === 12, onclick: () => move(1), 'aria-label': 'Mese successivo' }, '›')),
-      h('a', { href: '#/giornale/' + monthParam({ year: data.year, month: S.month }) }, 'Apri nel Giornale'),
-      h('label', { class: 'check prov-toggle' }, prov, ` Mostra i movimenti provvisori (${count} nell'anno)`)),
+      h('a', { href: '#/giornale/' + monthParam({ year: data.year, month: S.month }) }, 'Apri nel Giornale')),
     S.showProv && h('p', { class: 'hint' }, 'I provvisori sono in lilla: non contano nei saldi, che restano quelli delle registrazioni confermate.'),
     h('div', { class: 'table-wrap' },
       h('table', { class: 'list' },
