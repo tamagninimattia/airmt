@@ -257,12 +257,17 @@ dl.totals dd.strong { font-weight: 600; }
 ul.entries { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 ul.entries li + li { border-top: 1px solid var(--line-soft); }
 ul.entries li.empty { padding: 1rem; color: var(--muted); }
-ul.entries button {
-  all: unset; box-sizing: border-box; cursor: pointer; width: 100%;
+ul.entries li.entry { display: flex; align-items: stretch; }
+ul.entries button.entry-open {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: 1 1 auto; min-width: 0;
   display: grid; grid-template-columns: 3rem 1fr auto; grid-template-areas: "day what amt" "day what badge";
   align-items: center; gap: 0 .75rem; padding: .65rem .9rem; min-height: 3.25rem;
 }
 ul.entries button:hover { background: var(--surface-2); }
+/* duplica: pulsante stretto a destra di ogni registrazione */
+ul.entries button.entry-dup { all: unset; cursor: pointer; display: grid; place-items: center; flex: none; width: 2.75rem; color: var(--muted); border-left: 1px solid var(--line-soft); }
+ul.entries button.entry-dup:hover { color: var(--ink); background: var(--surface-2); }
+ul.entries button.entry-dup:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 ul.entries button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 ul.entries li.editing { background: var(--surface-muted); }
 .entry .day { grid-area: day; color: var(--muted); font-size: .9rem; }
@@ -280,6 +285,16 @@ ul.entries li.editing { background: var(--surface-muted); }
 .form-head h2 { margin: 0; }
 button.star { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border-radius: 50%; color: var(--warn); }
 button.star .ico { width: 1.35rem; height: 1.35rem; }
+.form-head .head-buttons { display: flex; gap: .35rem; }
+button.star.repeat { color: var(--prov); }
+/* Registrazione periodica: prima data, frequenza e "fino a", poi una riga per movimento */
+.periodic-controls { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.periodic-controls .field { flex: 1 1 9rem; display: grid; gap: .25rem; margin: 0; }
+.periodic-wrap { max-height: 22rem; overflow-y: auto; margin-top: .5rem; }
+table.periodic td { padding: .3rem .4rem; }
+table.periodic td:first-child { width: 1%; text-align: center; }
+table.periodic td input:not([type=checkbox]) { width: 100%; min-width: 7rem; }
+table.periodic tr.off td input:not([type=checkbox]) { opacity: .45; }
 .prov-check { margin: .1rem 0 .3rem; min-height: 2.25rem; }
 .entry-form .prov-check input { min-height: 0; width: 1.15rem; height: 1.15rem; }
 

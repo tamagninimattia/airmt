@@ -153,3 +153,20 @@ export function prefillFromQuery(query, accounts, causali) {
 
 // Nome proposto per un nuovo preferito: il conto economico, altrimenti la descrizione della causale
 export const favoriteName = (causale, account) => account?.name ?? causale?.description ?? '';
+
+// Registrazioni periodiche: date dalla prima a quella del mese "fino a" (AAAA-MM, compreso), ogni
+// "step" mesi, con lo stesso giorno della prima; nei mesi più corti si usa l'ultimo giorno (31 -> 30, 28).
+export function periodicDates(first, until, step = 1, max = 60) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(first || '') || !/^\d{4}-\d{2}$/.test(until || '') || !(step >= 1)) return [];
+  const [y0, m0, day] = first.split('-').map(Number);
+  const [yu, mu] = until.split('-').map(Number);
+  const out = [];
+  for (let i = 0; out.length < max; i += step) {
+    const y = y0 + Math.floor((m0 - 1 + i) / 12);
+    const m = ((m0 - 1 + i) % 12) + 1;
+    if (y * 12 + m > yu * 12 + mu) break;
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    out.push(`${y}-${String(m).padStart(2, '0')}-${String(Math.min(day, last)).padStart(2, '0')}`);
+  }
+  return out;
+}

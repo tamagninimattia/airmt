@@ -99,7 +99,7 @@ function drawList(ctx) {
     const cls = 'entry ' + e.causale_kind + (e.provisional ? ' provisional' : '') +
       (e.id === ctx.form.editingId() ? ' editing' : '');
     return h('li', { class: cls },
-      h('button', { type: 'button', 'aria-label': 'Modifica ' + title + ' del ' + fmtDay(e.entry_date) +
+      h('button', { type: 'button', class: 'entry-open', 'aria-label': 'Modifica ' + title + ' del ' + fmtDay(e.entry_date) +
                       (e.provisional ? ' (provvisorio)' : ''),
                     onclick: () => ctx.form.edit(e) },
         h('span', { class: 'day' }, fmtDay(e.entry_date)),
@@ -109,7 +109,11 @@ function drawList(ctx) {
         h('span', { class: 'amt' }, entrySign(e) + fmtAmount(e.amount)),
         e.provisional
           ? h('span', { class: 'badge prov' }, 'provvisorio')
-          : e.channel_alert && h('span', { class: 'badge alert' }, 'Alert')));
+          : e.channel_alert && h('span', { class: 'badge alert' }, 'Alert')),
+      // duplica: stessa registrazione come nuova, da modificare prima di registrare
+      h('button', { type: 'button', class: 'entry-dup', title: 'Duplica',
+                    'aria-label': 'Duplica ' + title + ' del ' + fmtDay(e.entry_date), onclick: () => ctx.form.duplicate(e) },
+        icon('i-copia')));
   }));
 }
 
@@ -200,7 +204,9 @@ function entryForm(ctx) {
   const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
   const title = h('h2', null);
   const star = h('button', { type: 'button', class: 'star quiet', onclick: saveFavorite,
-                             title: 'Salva tra i preferiti', 'aria-label': 'Salva tra i preferiti' }, starIcon());
+                             title: 'Salva tra i preferiti', 'aria-label': 'Salva tra i preferiti' }, icon('i-stella'));
+  const repeat = h('button', { type: 'button', class: 'star repeat quiet', onclick: () => openPeriodic(),
+                               title: 'Registra ogni mese (periodica)', 'aria-label': 'Registra ogni mese (periodica)' }, icon('i-ripeti'));
   const save = h('button', { type: 'submit' });
   const cancel = h('button', { type: 'button', class: 'quiet', onclick: () => reset(true) }, 'Annulla');
   const del = h('button', { type: 'button', class: 'danger quiet push', onclick: remove }, 'Elimina');
@@ -249,6 +255,7 @@ function entryForm(ctx) {
   }
 
   let pendingAccount = null;   // conto arrivato dal Budget per una voce senza canale standard
+  let stornoKeep = null;       // voce di uno storno duplicato: resta valida anche con la causale di tipo opposto
   causaleSel.addEventListener('change', () => sync(pendingAccount));
   accountSel.addEventListener('change', syncAlert);
   date.addEventListener('change', syncAlert);
@@ -267,6 +274,7 @@ function entryForm(ctx) {
     const keep = !full && !editing ? { causale: causaleSel.value, date: date.value } : null;
     editing = null;
     pendingAccount = null;
+    stornoKeep = null;
     fillCausali();
     causaleSel.value = keep?.causale ?? '';
     date.value = keep?.date || J.defaultDate(ctx.view, ctx.today);
@@ -299,9 +307,10 @@ function entryForm(ctx) {
 
   // Nuova registrazione già compilata (preferiti e "+" del Budget). Se la causale manca,
   // il conto resta in attesa e si seleziona appena la si sceglie.
-  function fill({ causaleId, accountId, amount: value, note: text, date: day }) {
+  function fill({ causaleId, accountId, amount: value, note: text, date: day, prov = false }) {
     editing = null;
     pendingAccount = causaleId ? null : accountId;
+    stornoKeep = null;
     fillCausali(causaleId);
     causaleSel.value = ctx.causale(causaleId) ? causaleId : '';
     accountSel.value = '';
@@ -309,11 +318,20 @@ function entryForm(ctx) {
     date.value = day;
     amount.value = value != null ? fmtAmount(Number(value)) : '';
     note.value = text || '';
-    provisional.checked = false;
+    provisional.checked = prov;
     setMode(false);
     syncAlert();
     if (ctx.entries.length) drawList(ctx);
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Duplica: tutto come la registrazione di partenza (anche data e "provvisorio"), come nuova da registrare
+  function duplicate(e) {
+    fill({ causaleId: e.causale_id, accountId: e.economic_account_id, amount: e.amount, note: e.note,
+           date: e.entry_date, prov: Boolean(e.provisional) });
+    if (ctx.account(e.economic_account_id)?.kind !== ctx.causale(e.causale_id)?.kind) stornoKeep = e.economic_account_id;
+    amount.focus({ preventScroll: true });
+    say('Copia di «' + entryTitle(ctx, e) + '» del ' + fmtDay(e.entry_date) + ': cambia quello che serve e premi Registra.');
   }
 
   // Preferito: causale, conto, importo e note come salvati; la data è sempre oggi
@@ -358,6 +376,117 @@ function entryForm(ctx) {
     }
   }
 
+  // Registrazione periodica: dai dati del form, una tabella di movimenti (uno per periodo) da rivedere
+  // riga per riga (data, importo, note); nascono tutti provvisori e si confermano quando arrivano.
+  function openPeriodic() {
+    clearMsg();
+    error.hidden = true;
+    const c = ctx.causale(causaleSel.value);
+    const a = J.needsEconomic(c) ? ctx.account(accountSel.value) ?? null : null;
+    const value = amount.value.trim() === '' ? null : parseAmount(amount.value);
+    const errors = J.validateEntry({ causale: c, account: a, date: date.value || ctx.today, amount: value ?? 1,
+                                    stornoId: stornoKeep }, ctx.years);
+    if (errors.length) {
+      error.textContent = errors.join(' ');
+      error.hidden = false;
+      return;
+    }
+
+    const first = h('input', { type: 'date', value: date.value || ctx.today });
+    const until = h('input', { type: 'month', value: (date.value || ctx.today).slice(0, 4) + '-12' });
+    const step = h('select', null, [[1, 'ogni mese'], [2, 'ogni 2 mesi'], [3, 'ogni 3 mesi'], [6, 'ogni 6 mesi'], [12, 'ogni anno']]
+      .map(([v, t]) => h('option', { value: v }, t)));
+    const body = h('tbody');
+    const count = h('button', { type: 'submit' });
+    const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
+    let lines = [];
+
+    // la tabella si rigenera quando cambiano prima data, frequenza o "fino a"
+    function generate() {
+      const dates = J.periodicDates(first.value, until.value, +step.value);
+      lines = dates.map((d) => ({
+        on: h('input', { type: 'checkbox', checked: true, 'aria-label': 'Registra il ' + fmtDay(d) }),
+        date: h('input', { type: 'date', value: d, 'aria-label': 'Data' }),
+        amount: h('input', { inputmode: 'decimal', autocomplete: 'off', placeholder: '0,00', 'aria-label': 'Importo',
+                             value: value != null ? fmtAmount(value) : '' }),
+        note: h('input', { autocomplete: 'off', 'aria-label': 'Note', value: note.value.trim() })
+      }));
+      body.replaceChildren(...(lines.length
+        ? lines.map((l) => {
+            const tr = h('tr', null, h('td', null, l.on), h('td', null, l.date), h('td', null, l.amount), h('td', null, l.note));
+            l.on.addEventListener('change', () => { tr.classList.toggle('off', !l.on.checked); countLabel(); });
+            return tr;
+          })
+        : [h('tr', null, h('td', { colspan: 4, class: 'muted' }, 'Nessuna data: controlla la prima data e «fino a».'))]));
+      countLabel();
+    }
+    const countLabel = () => {
+      const n = lines.filter((l) => l.on.checked).length;
+      count.textContent = n === 1 ? 'Registra 1 movimento provvisorio' : `Registra ${n} movimenti provvisori`;
+      count.disabled = !n;
+    };
+    for (const x of [first, until, step]) x.addEventListener('change', generate);
+
+    const detail = [c.code + ' · ' + c.description, a?.name].filter(Boolean).join(' · ');
+    const form = h('form', { method: 'dialog', novalidate: true },
+      h('h2', null, 'Registrazione periodica'),
+      h('p', null, detail),
+      h('div', { class: 'periodic-controls' },
+        h('label', { class: 'field' }, 'Prima data', first),
+        h('label', { class: 'field' }, 'Frequenza', step),
+        h('label', { class: 'field' }, 'Fino a', until)),
+      h('p', { class: 'hint' }, 'Nascono tutti come movimenti provvisori: non entrano nei calcoli finché non li confermi dal Giornale, quando arrivano alla loro data. Puoi cambiare data, importo e note di ogni riga, o togliere la spunta per saltarla.'),
+      h('div', { class: 'table-wrap periodic-wrap' },
+        h('table', { class: 'list periodic' },
+          h('thead', null, h('tr', null, h('th', { scope: 'col' }, ''), h('th', { scope: 'col' }, 'Data'),
+            h('th', { scope: 'col' }, 'Importo (€)'), h('th', { scope: 'col' }, 'Note'))),
+          body)),
+      err,
+      h('div', { class: 'actions' }, count,
+        h('button', { type: 'button', class: 'quiet', onclick: () => { dlg.close(); } }, 'Annulla')));
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      err.hidden = true;
+      const recs = [];
+      const problems = [];
+      for (const l of lines.filter((x) => x.on.checked)) {
+        const v = parseAmount(l.amount.value);
+        const e = J.validateEntry({ causale: c, account: a, date: l.date.value, amount: v, stornoId: stornoKeep }, ctx.years);
+        l.date.setAttribute('aria-invalid', String(e.some((t) => /data|anno/i.test(t))));
+        l.amount.setAttribute('aria-invalid', String(e.some((t) => /importo/i.test(t))));
+        if (e.length) problems.push((l.date.value ? fmtDay(l.date.value) + '/' + l.date.value.slice(0, 4) : 'riga senza data') + ': ' + e.join(' '));
+        else recs.push(J.buildEntry(c, a?.id ?? null, l.date.value, v, l.note.value, true));
+      }
+      if (problems.length) {
+        err.textContent = problems.join(' · ');
+        err.hidden = false;
+        return;
+      }
+      count.disabled = true;
+      try {
+        await rows(sb.from('entries').insert(recs));
+        dlg.close();
+        reset(true);
+        await Promise.all([loadEntries(ctx), loadMatured(ctx)]);
+        const days = recs.map((r) => r.entry_date).sort();
+        const full = (d) => fmtDay(d) + '/' + d.slice(0, 4);
+        say(recs.length === 1 ? `Salvato 1 movimento provvisorio, il ${full(days[0])}.`
+          : `Salvati ${recs.length} movimenti provvisori, dal ${full(days[0])} al ${full(days.at(-1))}.`);
+      } catch (e2) {
+        err.textContent = 'Movimenti non salvati: ' + e2.message + '.';
+        err.hidden = false;
+        count.disabled = false;
+      }
+    });
+
+    const dlg = h('dialog', { class: 'sheet wide' }, form);
+    dlg.addEventListener('close', () => dlg.remove());
+    document.body.append(dlg);
+    generate();
+    dlg.showModal();
+  }
+
   async function submit(ev) {
     ev.preventDefault();
     clearMsg();
@@ -366,7 +495,7 @@ function entryForm(ctx) {
     const a = J.needsEconomic(c) ? ctx.account(accountSel.value) : null;
     const value = parseAmount(amount.value);
     const errors = J.validateEntry({ causale: c, account: a, date: date.value, amount: value,
-                                    stornoId: editing?.economic_account_id ?? null }, ctx.years);
+                                    stornoId: editing?.economic_account_id ?? stornoKeep }, ctx.years);
     if (errors.length) {
       error.textContent = errors.join(' ');
       error.hidden = false;
@@ -412,7 +541,7 @@ function entryForm(ctx) {
   }
 
   const el = h('form', { class: 'entry-form', novalidate: true, onsubmit: submit },
-    h('div', { class: 'form-head' }, title, star),
+    h('div', { class: 'form-head' }, title, h('div', { class: 'head-buttons' }, repeat, star)),
     h('div', { class: 'field' }, h('label', { for: 'j-causale' }, 'Causale'), causaleSel, fixedInfo),
     accountField,
     h('div', { class: 'pair' },
@@ -427,16 +556,16 @@ function entryForm(ctx) {
     h('div', { class: 'actions' }, save, cancel, del));
 
   reset(true);
-  return { el, edit, applyFavorite, applyPrefill, editingId: () => editing?.id };
+  return { el, edit, duplicate, applyFavorite, applyPrefill, editingId: () => editing?.id };
 }
 
-// Stella dei preferiti: simbolo SVG di index.html
-function starIcon() {
+// Icone (stella, ripeti, copia): simboli SVG di index.html
+function icon(id) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'ico');
   svg.setAttribute('aria-hidden', 'true');
   const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-  use.setAttribute('href', '#i-stella');
+  use.setAttribute('href', '#' + id);
   svg.append(use);
   return svg;
 }

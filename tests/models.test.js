@@ -178,3 +178,12 @@ test('impostazioni: causali proposte per un nuovo conto patrimoniale', () => {
   const clash = M.causaleProposals(acc('new'), 'FIN', accounts, causali).find((x) => x.key === 'cos');
   ok(/COSFIN è già usato/.test(M.validateProposals('FIN', [clash], causali).join(' ')), 'codice già usato');
 });
+
+test('giornale: date delle registrazioni periodiche', () => {
+  eq(J.periodicDates('2027-01-15', '2027-04'), ['2027-01-15', '2027-02-15', '2027-03-15', '2027-04-15'], 'mensile');
+  eq(J.periodicDates('2027-01-31', '2027-04'), ['2027-01-31', '2027-02-28', '2027-03-31', '2027-04-30'], 'fine mese');
+  eq(J.periodicDates('2027-11-10', '2028-03', 2), ['2027-11-10', '2028-01-10', '2028-03-10'], 'bimestrale, a cavallo d\'anno');
+  eq(J.periodicDates('2027-05-01', '2027-04'), [], '"fino a" prima della prima data');
+  eq(J.periodicDates('', '2027-04'), [], 'senza data');
+  eq(J.periodicDates('2027-01-01', '2035-12', 1, 24).length, 24, 'al massimo max date');
+});
