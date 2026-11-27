@@ -78,3 +78,26 @@ test('importazione: dal file alle registrazioni, con abbinamento dei nomi', () =
     { month: '2026-02', count: 1, ricavi: 0, costi: 0, finanziarie: 250 }]);
   eq(I.dupKey(rows[0].rec), '2026-01-03|ris|fin|42.5');
 });
+
+test('importazione: causali mancanti create in automatico', () => {
+  const table = I.sheetRows([
+    ['05/01/2026', 'Portafoglio', 'Ristoranti', 20],
+    ['06/01/2026', 'Portafoglio', 'Ristoranti', 15],
+    ['07/01/2026', 'Carta di credito (corrente)', 'Portafoglio', 50],
+    ['08/01/2026', 'Conto corrente FINECO', 'Ristoranti', 9]
+  ]);
+  const { rows } = I.parseImport(table, ctx);
+  eq(rows.map((r) => Boolean(r.missing)), [true, true, true, false], 'righe senza causale riconosciute');
+  const list = I.missingCausali(rows, accounts, causali);
+  eq(list.map((x) => [x.rec.code, x.rec.kind, x.count]), [['COSPOR', 'costo', 2], ['CCREDPOR', 'finanziaria', 1]],
+     'una per coppia di conti, la più usata prima');
+  eq([list[0].rec.credit_account_id, list[0].rec.description, list[0].rec.grp], ['por', 'Costi Portafoglio', 'Costi']);
+  eq([list[1].rec.debit_account_id, list[1].rec.credit_account_id], ['por', 'cc'], 'trasferimento da carta a portafoglio');
+  ok(list.every((x) => Number.isInteger(x.rec.sort_order)), 'ordine assegnato');
+  // codice già usato da un'altra causale: si aggiunge un numero
+  const taken = [...causali, { id: 'Z', code: 'COSPOR', description: 'Altro', kind: 'costo', credit_account_id: 'fin' }];
+  eq(I.missingCausali(I.parseImport(table, { ...ctx, causali: taken }).rows, accounts, taken)[0].rec.code, 'COSPOR2');
+  // create le causali, le righe trovano la loro
+  const created = [...causali, ...list.map((x, i) => ({ id: 'n' + i, ...x.rec }))];
+  ok(I.parseImport(table, { ...ctx, causali: created }).rows.every((r) => r.rec), 'tutte pronte dopo la creazione');
+});

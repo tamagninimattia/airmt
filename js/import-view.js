@@ -144,6 +144,43 @@ async function openPreview(ctx, table, fileName, onDone) {
       group('Voci di ricavo', by((a) => a.type === 'economico' && a.kind === 'ricavo'))];
   };
 
+  // Causali che mancano per alcune righe: elenco e creazione in un colpo, poi l'anteprima si ricalcola
+  function missingSection(list) {
+    if (!list.length) return null;
+    const name = (id) => ctx.accounts.find((a) => a.id === id)?.name ?? '–';
+    const side = (rec, which) => (rec.kind === 'costo' && which === 'debit') || (rec.kind === 'ricavo' && which === 'credit')
+      ? h('em', { class: 'muted' }, 'la voce') : name(rec[which + '_account_id']);
+    const rowsCount = list.reduce((t, x) => t + x.count, 0);
+    const create = h('button', { type: 'button' }, list.length === 1 ? 'Crea 1 causale' : `Crea ${list.length} causali`);
+    create.addEventListener('click', async () => {
+      create.disabled = true;
+      error.hidden = true;
+      try {
+        await rows(sb.from('causali').insert(list.map((x) => x.rec)));
+        // le nuove causali entrano nei dati del Giornale (stessa lista): servono anche al form
+        const fresh = await rows(sb.from('causali').select('*'));
+        ctx.causali.splice(0, ctx.causali.length, ...fresh);
+        paint();
+        say(`Create ${list.length} causali: ${list.map((x) => x.rec.code).join(', ')}.`);
+      } catch (e) {
+        error.textContent = 'Causali non create: ' + e.message + '.';
+        error.hidden = false;
+        create.disabled = false;
+      }
+    });
+    return [
+      h('h3', null, 'Causali mancanti'),
+      h('p', { class: 'hint' }, `${rowsCount === 1 ? '1 riga non ha' : rowsCount + ' righe non hanno'} una causale per la sua coppia di conti. ` +
+        'Le creo con codici e descrizioni come quelli della finestra «Causali» dei conti; dopo potrai modificarle nelle Impostazioni.'),
+      h('div', { class: 'table-wrap' }, h('table', { class: 'list' },
+        h('thead', null, h('tr', null, h('th', null, 'Codice'), h('th', null, 'Descrizione'), h('th', null, 'Dare'),
+          h('th', null, 'Avere'), h('th', { class: 'num' }, 'Righe'))),
+        h('tbody', null, list.map((x) => h('tr', null,
+          h('td', null, h('code', null, x.rec.code)), h('td', null, x.rec.description),
+          h('td', null, side(x.rec, 'debit')), h('td', null, side(x.rec, 'credit')), h('td', { class: 'num' }, x.count)))))),
+      h('div', { class: 'actions tight' }, create)];
+  }
+
   function paint() {
     const { rows: parsed } = I.parseImport(table, { ...ctx, mapping });
     const ok = parsed.filter((r) => r.rec);
@@ -174,6 +211,7 @@ async function openPreview(ctx, table, fileName, onDone) {
           h('thead', null, h('tr', null, h('th', null, 'Nel file'), h('th', null, 'Conto dell\'app'))),
           h('tbody', null, unknown.map((n) => mapRow(n, n.toLowerCase())),
             mapped.map((k) => mapRow(k, k)))))],
+      missingSection(I.missingCausali(parsed, ctx.accounts, ctx.causali)),
       h('h3', null, 'Riepilogo'),
       h('ul', { class: 'checks' },
         h('li', { class: ok.length ? 'ok' : 'warn' }, ok.length === 1 ? '1 riga pronta' : `${ok.length} righe pronte`),

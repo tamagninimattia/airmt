@@ -5,6 +5,7 @@
 //   Ricavo: Da = voce di ricavo, A = canale. Tra due conti patrimoniali: Da = partenza, A = arrivo.
 //   Note e Causale (codice, solo per scegliere tra due causali possibili) sono facoltative.
 import { parseAmount, round2 } from './format.js';
+import { accountAbbr, causaleProposals, nextOrder } from './settings-model.js';
 
 const norm = (s) => String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 const pad = (n) => String(n).padStart(2, '0');
@@ -103,7 +104,8 @@ export function matchCausale(from, to, causali, code) {
   if (!list.length) {
     const what = kind === 'costo' ? `di costo pagata da «${from.name}»` : kind === 'ricavo' ? `di ricavo incassata su «${to.name}»`
       : `da «${from.name}» a «${to.name}»`;
-    return { error: `Non esiste una causale ${what}: creala dalle Impostazioni (pulsante Causali del conto).` };
+    return { error: `Non esiste una causale ${what}: creala qui sopra con «Crea le causali mancanti».`,
+             missing: { kind, from, to } };
   }
   // tra più causali possibili vale il canale standard della voce, altrimenti la si indica nella colonna Causale
   const std = account && list.find((c) => c.id === account.standard_causale_id);
@@ -140,7 +142,7 @@ export function parseImport(table, { accounts, causali, years, mapping = {} }) {
     else if (!(r.amount > 0)) r.error = 'L\'importo deve essere maggiore di zero.';
     if (!r.error) {
       const m = matchCausale(from, to, causali, code);
-      if (m.error) r.error = m.error;
+      if (m.error) { r.error = m.error; r.missing = m.missing ?? null; }
       else {
         r.causale = m.causale;
         r.account = m.account;
@@ -173,4 +175,52 @@ export function monthSummary(rows) {
     s[key] = round2(s[key] + r.amount);
   }
   return [...out.values()].sort((a, b) => a.month.localeCompare(b.month));
+}
+
+/**
+ * Causali che mancano per le righe del file (righe con `missing`), una per coppia di conti, pronte da
+ * creare: stessi codici e descrizioni della finestra "Crea le causali" del conto (COS/RIC+sigla,
+ * sigla+sigla, ICRED/DCRE/IDEB/DDEB+sigla). Codici o descrizioni già usati ricevono un numero.
+ * Restituisce [{ rec, count }] con rec pronto per la tabella causali (sort_order compreso).
+ */
+export function missingCausali(rows, accounts, causali) {
+  const byKey = new Map();
+  for (const r of rows) {
+    const m = r.missing;
+    if (!m) continue;
+    const debit = m.kind === 'costo' ? null : m.kind === 'ricavo' ? m.to.id : m.to.id;
+    const credit = m.kind === 'ricavo' ? null : m.from.id;
+    const key = `${m.kind}|${debit}|${credit}`;
+    if (byKey.has(key)) { byKey.get(key).count++; continue; }
+    const fits = (rec) => rec.kind === m.kind
+      && (m.kind === 'costo' || rec.debit_account_id === debit)
+      && (m.kind === 'ricavo' || rec.credit_account_id === credit);
+    const pool = [m.from, m.to].filter((a) => a.type === 'patrimoniale')
+      .flatMap((a) => causaleProposals({ ...a, active: true }, accountAbbr(a, causali), accounts, causali))
+      // con Altri crediti o Altri debiti valgono le causali di crediti e debiti (ICRED, DCRE, IDEB, DDEB)
+      .sort((a, b) => (b.section === 'crediti') - (a.section === 'crediti'));
+    const found = pool.find((p) => fits(p.rec));
+    const rec = found ? { ...found.rec } : {
+      // conti fuori dalle proposte (per esempio disattivati): trasferimento generico
+      code: accountAbbr(m.from, causali) + accountAbbr(m.to, causali),
+      description: `Trasferimenti ${m.from.name} -> ${m.to.name}`,
+      kind: 'finanziaria', debit_account_id: debit, credit_account_id: credit, grp: 'Trasferimenti', budget_rule: null, active: true
+    };
+    byKey.set(key, { rec, count: 1 });
+  }
+  // codici e descrizioni unici, rispetto alle causali esistenti e tra le nuove
+  const codes = new Set(causali.map((c) => c.code));
+  const descs = new Set(causali.map((c) => norm(c.description)));
+  let order = nextOrder(causali);
+  const out = [...byKey.values()];
+  for (const x of out) {
+    const base = x.rec.code.slice(0, 11);
+    for (let n = 2; codes.has(x.rec.code); n++) x.rec.code = base.slice(0, 12 - String(n).length) + n;
+    const d = x.rec.description;
+    for (let n = 2; descs.has(norm(x.rec.description)); n++) x.rec.description = `${d} (${n})`;
+    codes.add(x.rec.code);
+    descs.add(norm(x.rec.description));
+    x.rec.sort_order = order++;
+  }
+  return out.sort((a, b) => b.count - a.count);
 }
