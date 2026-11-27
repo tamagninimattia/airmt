@@ -53,9 +53,9 @@ export function cardRows(data, { actual, budget }, accountId, { showZero = false
       const a = aMoves.get(c.id)?.[side] ?? zeros();
       const structural = causaleSide(c, accountId) === side;
       if (!(nonzero(b) || nonzero(a) || (structural && showZero))) continue;
-      lines.push({ key: `${side}-${c.id}`, type: 'line', label: c.description, code: c.code, kind: 'finanziaria',
+      lines.push({ key: `${side}-${c.id}`, type: 'line', label: c.description, kind: 'finanziaria',
                    budget: b, actual: a, total: 'sum', inactive: !c.active,
-                   badge: c.budget_rule ? 'calcolato' : null });
+                   calc: Boolean(c.budget_rule) });
     }
     return [
       { key: 'sub-' + side, type: 'sub', label },

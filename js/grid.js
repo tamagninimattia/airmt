@@ -65,7 +65,8 @@ export const cellVariance = (row, b, a) => (a == null || b == null || !row.kind 
 // Nel Budget la cella da digitare passa da gialla a verde.
 export const budgetReached = (row, b, a) => Boolean(b && cellVariance(row, b, a) === 0);
 
-// Griglia in sola lettura. rows: { key, type, label, code?, href?, kind?, budget, actual?, total, negRed?, badge? }
+// Griglia in sola lettura. rows: { key, type, label, code?, href?, kind?, budget, actual?, total, negRed?, badge?, calc? }
+// calc: budget calcolato dall'app, nome in corsivo con la spiegazione passandoci sopra
 // type: 'head' | 'sub' | 'line' | 'total' | 'check'
 export function readGrid({ rows, expanded, cur, closed, onToggle, label }) {
   const ncols = columnCount(expanded);
@@ -74,7 +75,8 @@ export function readGrid({ rows, expanded, cur, closed, onToggle, label }) {
       return h('tr', { class: row.type }, h('th', { colspan: ncols, scope: 'colgroup' }, h('span', null, row.label)));
     }
     const cells = [h('th', { scope: 'row', class: 'label' },
-      row.href ? h('a', { href: row.href, class: 'name' }, row.label) : h('span', { class: 'name' }, row.label),
+      row.href ? h('a', { href: row.href, class: 'name' }, row.label)
+        : h('span', row.calc ? { class: 'name calc-name', title: 'Budget calcolato dall\'app' } : { class: 'name' }, row.label),
       row.code && h('code', null, row.code),
       row.badge && h('span', { class: 'badge' }, row.badge))];
     for (let m = 0; m < 12; m++) {

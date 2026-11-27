@@ -410,6 +410,12 @@ table.grid td.future { opacity: .55; }
 .ledger-wrap thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }
 .ledger table.list td a { color: inherit; }
 .card-summary { margin-top: 1.75rem; }
+table.grid th.label .calc-name { font-style: italic; cursor: help; }
+/* riepilogo del Partitario: la colonna dei nomi contiene tutto il testo (sul telefono resta stretta) */
+@media (min-width: 40.01rem) {
+  .card-summary table.grid th.label { max-width: none; }
+  .card-summary table.grid th.label .name { max-width: none; }
+}
 .card-summary h2 { margin: 0 0 .6rem; text-transform: none; }
 /* Budget: Progr. che comprende movimenti provvisori */
 table.grid td.a.prov { color: var(--prov); font-style: italic; background: var(--prov-bg); }

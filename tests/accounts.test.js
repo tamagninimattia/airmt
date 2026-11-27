@@ -20,7 +20,7 @@ test('scheda Fineco: variazioni + e − di budget come nell\'Excel', () => {
   eq(rows.get('closing').budget, X.budget.closing[FIN], 'saldo finale');
   eq(rows.get('avere-ADDCCRED').budget.slice(0, 2), X.budget.causali.ADDCCRED.slice(0, 2), 'addebito carta');
   eq(rows.get('avere-COSFIN').budget[0], X.budget.channels.COSFIN[0], 'costi Fineco (canale)');
-  eq(rows.get('avere-ADDCCRED').badge, 'calcolato', 'budget calcolato segnalato');
+  eq(rows.get('avere-ADDCCRED').calc, true, 'budget calcolato segnalato');
   ok(!rows.has('dare-PAYFIN'), 'causale senza movimenti nascosta');
   ok(byKey(cardRows(data, result(data), FIN, { showZero: true })).has('dare-PAYFIN'), 'mostrata a richiesta');
 });
