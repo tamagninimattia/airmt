@@ -397,7 +397,10 @@ button.align:focus-visible { outline: 3px solid var(--focus); }
 .budget-head select { width: auto; min-width: 16rem; }
 table.grid th.label a.name { color: var(--ink); }
 table.grid td.future { opacity: .55; }
-.ledger { margin-top: 1.25rem; max-width: 60rem; }
+/* le colonne si allargano quanto serve: contropartita e note su una riga (il riquadro scorre se non ci stanno) */
+.ledger { margin-top: 1.25rem; }
+.ledger-wrap { width: fit-content; max-width: 100%; }
+.ledger table.list td, .ledger table.list th { white-space: nowrap; }
 .ledger-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: .6rem; }
 .ledger-head h2 { margin: 0; text-transform: none; }
 .ledger table.list tr.edge td { font-weight: 600; background: var(--surface-2); }
