@@ -576,8 +576,9 @@ table.grid tr.head th .name, table.grid tr.sub th .name { max-width: none; }
 .back a { color: var(--accent-text); text-decoration: none; }
 .back a:hover { text-decoration: underline; }
 
-/* Importa da Excel (Giornale): zona per trascinare il file ed elenco delle importazioni */
-.journal-side .import-card > .hint { margin: 0 0 .75rem; }
+/* Importa da Excel (sotto Impostazioni): zona per trascinare il file ed elenco delle importazioni */
+.import-page { max-width: 46rem; }
+.import-card > .hint { margin: 0 0 .75rem; }
 .import-card h3 { font-size: .95rem; margin: 1.1rem 0 .4rem; }
 .drop {
   display: grid; place-items: center; gap: .2rem; padding: 1.4rem 1rem; text-align: center; cursor: pointer;

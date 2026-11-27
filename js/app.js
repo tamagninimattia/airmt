@@ -11,9 +11,10 @@ import * as accounts from './views/accounts.js';
 import * as position from './views/position.js';
 import * as dashboard from './views/dashboard.js';
 import * as closing from './views/closing.js';
+import * as importView from './views/import.js';
 
 const routes = { dashboard, giornale: journal, budget, partitario: accounts, patrimonio: position,
-                 chiusure: closing, apertura: opening, avvio: setup, impostazioni: settings };
+                 chiusure: closing, apertura: opening, avvio: setup, impostazioni: settings, importa: importView };
 let session = null;
 
 // Senza piano dei conti si parte dall'Avvio; altrimenti dalla Dashboard sugli schermi larghi

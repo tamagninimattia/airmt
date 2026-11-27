@@ -1,4 +1,4 @@
-// Importazione del Giornale da Excel, nel Giornale: riquadro con il file da trascinare,
+// Importazione del Giornale da Excel (vista Importa da Excel, sotto Impostazioni): riquadro con il file da trascinare,
 // anteprima con l'abbinamento dei nomi, elenco delle importazioni con "Annulla".
 import { sb, rows, rowsAll, countRows } from './db.js';
 import { h, say, clearMsg, confirmBox } from './ui.js';
@@ -111,7 +111,7 @@ export function importCard(ctx, onDone) {
 
   loadImports();
   return h('section', { class: 'card import-card', 'aria-labelledby': 'imp-title' },
-    h('h2', { id: 'imp-title' }, 'Importa da Excel'),
+    h('h2', { id: 'imp-title' }, 'Carica un file'),
     h('p', { class: 'hint' }, 'Una riga per registrazione: Data, Da (da dove escono i soldi), A (dove vanno), Importo, Note. ',
       h('a', { href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(TEMPLATE), download: 'modello-giornale.csv' }, 'Scarica il modello'), '.'),
     drop, picker,
