@@ -51,7 +51,7 @@ export function monthChecks(data, { actual, budget }, month, alignItems = []) {
     if (round2(b - ac) !== 0) {
       budgetDiffs.push({ label: c.description, code: c.code, kind: 'finanziaria', budget: b, actual: ac,
                          diff: round2(ac - b), calculated: Boolean(c.budget_rule),
-                         edit: c.budget_rule ? null : { table: 'budget_causali', id: c.id } });
+                         edit: { table: 'budget_causali', id: c.id } });
     }
   }
   const recs = reconciliationRows(data, actual, month);
@@ -66,7 +66,7 @@ export function monthChecks(data, { actual, budget }, month, alignItems = []) {
 }
 
 // "Allinea tutto il budget del mese al consuntivo": righe da salvare per tabella, dalle differenze
-// di monthChecks. Le causali calcolate (senza edit) si sistemano da sole e restano fuori.
+// di monthChecks, comprese le causali calcolate: per loro la riga salvata vale al posto del calcolato.
 export function alignMonthRows(budgetDiffs, userId, year, month) {
   const out = { budget_accounts: [], budget_causali: [] };
   for (const d of budgetDiffs) {

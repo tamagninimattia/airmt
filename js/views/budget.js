@@ -178,8 +178,13 @@ function update() {
       const cell = reg.budget[m];
       if (row.type === 'count') fillCount(cell, m, b);
       else if (cell.tagName === 'INPUT') {
-        if (document.activeElement !== cell && cell.getAttribute('aria-invalid') !== 'true') cell.value = b ? fmtAmount(b) : '';
+        // uno zero scritto a mano su una calcolata si vede (0,00), altrimenti la cella sembrerebbe vuota
+        const shown = b || (row.rule && row.manual?.[m]) ? fmtAmount(b) : '';
+        if (document.activeElement !== cell && cell.getAttribute('aria-invalid') !== 'true') cell.value = shown;
         cell.classList.toggle('reached', budgetReached(row, b, row.actual?.[m] ?? null));
+        // causale calcolata: azzurra dove vale il calcolato, gialla dove il valore è scritto a mano
+        cell.classList.toggle('calc', Boolean(row.rule && !row.manual?.[m]));
+        cell.title = row.rule ? (row.manual?.[m] ? 'Scritto a mano: svuota la cella per tornare al calcolato' : 'Calcolato: scrivi un importo per sostituirlo') : '';
       } else setNum(cell, b, row);
       if (reg.actual[m]) {
         const a = row.actual?.[m];
@@ -270,17 +275,20 @@ function updateStatus() {
 // Modifica e salvataggio
 // ---------------------------------------------------------------------
 
-function localValue(edit, m) {
+// Valore salvato per una cella: null se non c'è riga (per le causali calcolate: vale il calcolato)
+function localRaw(edit, m) {
   const t = TABLES[edit.table];
   const r = S.data[t.list].find((x) => x.month === m + 1 && x[t.key] === edit.id);
-  return r ? Number(r.amount) : 0;
+  return r ? Number(r.amount) : null;
 }
-
+const localValue = (edit, m) => localRaw(edit, m) ?? 0;
+// amount null: si elimina la riga (una causale calcolata torna al valore calcolato)
 function setLocal(edit, m, amount) {
   const t = TABLES[edit.table];
   const list = S.data[t.list];
-  const r = list.find((x) => x.month === m + 1 && x[t.key] === edit.id);
-  if (r) r.amount = amount;
+  const i = list.findIndex((x) => x.month === m + 1 && x[t.key] === edit.id);
+  if (amount === null) { if (i >= 0) list.splice(i, 1); }
+  else if (i >= 0) list[i].amount = amount;
   else list.push({ month: m + 1, [t.key]: edit.id, amount });
 }
 
@@ -288,7 +296,7 @@ function setLocal(edit, m, amount) {
 // aggiorna subito), poi su Supabase. Se il salvataggio fallisce, i valori tornano come prima.
 async function apply(changes, inputs = []) {
   if (!changes.length) return true;
-  const before = changes.map((c) => localValue(c.edit, c.m));
+  const before = changes.map((c) => localRaw(c.edit, c.m));
   changes.forEach((c) => setLocal(c.edit, c.m, c.amount));
   refresh();
   inputs.forEach((i) => i.classList.add('saving'));
@@ -296,6 +304,11 @@ async function apply(changes, inputs = []) {
     const byTable = new Map();
     for (const c of changes) {
       const t = TABLES[c.edit.table];
+      // amount null: si elimina la riga (causale calcolata che torna al calcolato)
+      if (c.amount === null) {
+        await query(sb.from(c.edit.table).delete().eq('year', S.data.year).eq('month', c.m + 1).eq(t.key, c.edit.id));
+        continue;
+      }
       if (!byTable.has(c.edit.table)) byTable.set(c.edit.table, []);
       byTable.get(c.edit.table).push({ user_id: S.session.user.id, year: S.data.year, month: c.m + 1,
                                        [t.key]: c.edit.id, amount: c.amount });
@@ -319,19 +332,21 @@ async function alignCell(row, m) {
   const x = alignToActual(row, m + 1, S.cur);
   if (!x) return;
   const where = `«${row.label}», ${MONTHS[m]}`;
+  const prev = localRaw(row.edit, m);   // per Annulla: null = era il valore calcolato
   if (!await apply([{ edit: row.edit, m, amount: x.to }])) return;
   say(`Budget di ${where}: da ${fmtAmount(x.from)} a ${fmtAmount(x.to)}. `);
   const undo = h('button', { type: 'button', class: 'link' }, 'Annulla');
   undo.addEventListener('click', async () => {
     undo.disabled = true;
-    if (await apply([{ edit: row.edit, m, amount: x.from }])) say(`Budget di ${where} riportato a ${fmtAmount(x.from)}.`);
+    if (await apply([{ edit: row.edit, m, amount: row.rule ? prev : x.from }])) say(`Budget di ${where} riportato a ${fmtAmount(x.from)}.`);
   });
   $('msg').append(undo);
 }
 
 function commit(row, m, input) {
   const text = input.value.trim();
-  const amount = text === '' ? 0 : parseAmount(text);
+  // causale calcolata: cella vuota = di nuovo il valore calcolato
+  const amount = text === '' ? (row.rule ? null : 0) : parseAmount(text);
   if (Number.isNaN(amount)) {
     input.setAttribute('aria-invalid', 'true');
     say(`Importo non valido in «${row.label}», ${MONTHS[m]}: scrivilo come 12,50.`, true);
@@ -339,7 +354,10 @@ function commit(row, m, input) {
   }
   input.removeAttribute('aria-invalid');
   input.value = amount ? fmtAmount(amount) : '';
-  if (amount === localValue(row.edit, m)) return;
+  if (amount === (row.rule ? localRaw(row.edit, m) : localValue(row.edit, m))) {
+    if (amount === null) update();   // ricompare il valore calcolato
+    return;
+  }
   clearMsg();
   apply([{ edit: row.edit, m, amount }], [input]);
 }
@@ -347,7 +365,7 @@ function commit(row, m, input) {
 // Invio / Maiusc+Invio: riga sotto / sopra nello stesso mese. Esc: annulla la modifica.
 function onKey(ev, input, row, m) {
   if (ev.key === 'Escape') {
-    const v = localValue(row.edit, m);
+    const v = row.budget?.[m] ?? 0;   // il valore mostrato (scritto o calcolato)
     input.value = v ? fmtAmount(v) : '';
     input.removeAttribute('aria-invalid');
     input.select();

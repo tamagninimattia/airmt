@@ -98,10 +98,10 @@ test('allinea tutto il budget del mese al consuntivo', () => {
   const c = monthChecks(data, result(data), 1);
   const out = alignMonthRows(c.budgetDiffs, 'u1', 2027, 1);
   const manual = c.budgetDiffs.filter((d) => d.edit);
-  eq(out.budget_accounts.length + out.budget_causali.length, manual.length, 'una riga per voce manuale');
-  ok(!out.budget_causali.some((r) => r.causale_id === 'GCCCRED'), 'causali calcolate escluse');
+  eq(out.budget_accounts.length + out.budget_causali.length, manual.length, 'una riga per voce');
+  ok(out.budget_causali.some((r) => r.causale_id === 'GCCCRED'), 'anche le calcolate: il consuntivo diventa un valore scritto');
   eq(out.budget_causali.find((r) => r.causale_id === 'PREFIN')?.amount, 0, 'prelievo non registrato: budget a 0');
-  // applicate al budget, restano diverse solo le causali calcolate (si sistemano con canali e Var)
+  // applicate al budget, non resta nessuna differenza (calcolate comprese)
   for (const [table, list] of [['budget_accounts', 'budgetAccounts'], ['budget_causali', 'budgetCausali']]) {
     const key = table === 'budget_accounts' ? 'account_id' : 'causale_id';
     for (const r of out[table]) {
@@ -109,5 +109,5 @@ test('allinea tutto il budget del mese al consuntivo', () => {
       data[list].push({ month: 1, [key]: r[key], amount: r.amount });
     }
   }
-  eq(monthChecks(data, result(data), 1).budgetDiffs.filter((d) => d.edit), [], 'voci manuali allineate');
+  eq(monthChecks(data, result(data), 1).budgetDiffs, [], 'tutto allineato');
 });

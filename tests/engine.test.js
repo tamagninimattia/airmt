@@ -218,3 +218,18 @@ test('una voce con budget e senza canale standard si vede e rompe la quadratura'
   eq(b.unassigned.map((a) => a.id), ['Sushi']);
   eq(b.quadratura[0], E.budgetGennaio.sushi, 'gennaio: il budget del sushi non esce da nessun conto');
 });
+
+test('causali calcolate: un valore scritto a mano vale al posto del calcolato', () => {
+  const data = year2027();
+  const base = computeBudget(data);
+  const giro = base.causali.get('GCCCRED');
+  // giroconto di febbraio scritto a mano: l'addebito di marzo lo segue; addebito di gennaio a 0
+  const over = computeBudget({ ...data, budgetCausali: [...data.budgetCausali,
+    { month: 2, causale_id: 'GCCCRED', amount: 123.45 }, { month: 1, causale_id: 'ADDCCRED', amount: 0 }] });
+  eq(over.causali.get('GCCCRED')[1], 123.45, 'giroconto di febbraio scritto');
+  eq(over.causali.get('GCCCRED')[2], giro[2], 'marzo resta calcolato');
+  eq(over.causali.get('ADDCCRED')[2], 123.45, "l'addebito di marzo segue il giroconto scritto");
+  eq(over.causali.get('ADDCCRED')[0], 0, 'addebito di gennaio scritto a 0');
+  eq(over.overrides.get('ADDCCRED').slice(0, 2), [0, null], 'mesi scritti e calcolati');
+  eq(base.overrides.size, 0, 'senza righe salvate tutto calcolato');
+});

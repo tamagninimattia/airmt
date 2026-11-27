@@ -97,7 +97,9 @@ export function buildRows(data, { actual, budget }, { showZero = false, alignCou
     for (const c of visible) {
       rows.push({ key: 'fin-' + c.id, type: 'line', label: c.description, code: c.code, kind: 'finanziaria',
                   budget: get(budget.causali, c.id), actual: get(actual.causali, c.id),
-                  edit: c.budget_rule ? null : { table: 'budget_causali', id: c.id },
+                  // anche le calcolate si possono scrivere a mano, mese per mese (manual: dove il valore è scritto)
+                  edit: { table: 'budget_causali', id: c.id },
+                  manual: c.budget_rule ? (budget.overrides?.get(c.id) ?? new Array(12).fill(null)).map((v) => v != null) : null,
                   rule: c.budget_rule || null, calc: c.budget_rule ? ruleLabel(c.budget_rule) : null, inactive: !c.active, total: 'sum' });
     }
   }

@@ -170,14 +170,22 @@ export function computeBudget({ accounts, causali, openings, budgetAccounts, bud
   }
   roundAll(channels);
 
-  // causali finanziarie: manuali, tranne quelle con budget_rule (calcolate qui sotto)
+  // causali finanziarie: manuali, tranne quelle con budget_rule (calcolate qui sotto). Per queste una riga
+  // salvata in budget_causali è un valore scritto a mano che vale al posto del calcolato in quel mese
+  // (overrides: causale -> 12 valori, null dove vale il calcolato)
   const fin = new Map(causali.filter((c) => c.kind === 'finanziaria').map((c) => [c.id, zeros()]));
+  const overrides = new Map();
   for (const r of budgetCausali) {
     const c = byId.get(r.causale_id);
-    if (c?.kind === 'finanziaria' && !c.budget_rule) add(fin, c.id, r.month - 1, Number(r.amount));
+    if (c?.kind !== 'finanziaria') continue;
+    if (!c.budget_rule) add(fin, c.id, r.month - 1, Number(r.amount));
+    else {
+      if (!overrides.has(c.id)) overrides.set(c.id, new Array(12).fill(null));
+      overrides.get(c.id)[r.month - 1] = round2(Number(r.amount));
+    }
   }
   roundAll(fin);
-  applyRules(causali, openings, channels, fin);
+  applyRules(causali, openings, channels, fin, overrides);
 
   // movimenti di budget sui conti patrimoniali
   // (per ricavi e costi solo il lato del canale: il conto economico non ha saldo)
@@ -196,7 +204,7 @@ export function computeBudget({ accounts, causali, openings, budgetAccounts, bud
   const closing = closingBalances(accounts, openings, dare, avere);
 
   return {
-    econ, channels, adjustments: vars, causali: fin, moves, closing, ricavi, costi,
+    econ, channels, adjustments: vars, causali: fin, overrides, moves, closing, ricavi, costi,
     // "Verifica Variazioni": la somma di tutte le Var del mese deve fare 0
     varCheck: total(vars, [...vars.keys()]),
     // voci con budget ma senza canale standard: non muovono nessun conto e rompono la quadratura
@@ -210,9 +218,15 @@ export function computeBudget({ accounts, causali, openings, budgetAccounts, bud
 //   mt_rimborso    gennaio = saldo iniziale del credito verso MT; poi anticipi del mese prima
 //   card_giroconto costi su carta − ricavi su carta del mese (budget per canale, Var comprese)
 //   card_addebito  gennaio = saldo iniziale della carta da addebitare; poi giroconto del mese prima
-function applyRules(causali, openings, channels, fin) {
+// In ogni mese un valore scritto a mano (overrides) prende il posto del calcolato; le regole che
+// dipendono da un'altra (l'addebito dal giroconto) usano il valore finale, scritto o calcolato.
+function applyRules(causali, openings, channels, fin, overrides = new Map()) {
   const opening = (id) => Number(openings[id] || 0);
   const rule = (r) => causali.find((c) => c.budget_rule === r);
+  const set = (c, series) => {
+    const o = overrides.get(c.id);
+    fin.set(c.id, series.map((v, m) => (o && o[m] != null ? o[m] : v)));
+  };
 
   const mt = rule('mt_rimborso');
   if (mt) {
@@ -220,7 +234,7 @@ function applyRules(causali, openings, channels, fin) {
     const anticipi = total(fin, causali
       .filter((c) => c.kind === 'finanziaria' && c.id !== mt.id && c.debit_account_id === mt.credit_account_id)
       .map((c) => c.id));
-    fin.set(mt.id, anticipi.map((_, m) => (m === 0 ? opening(mt.credit_account_id) : anticipi[m - 1])));
+    set(mt, anticipi.map((_, m) => (m === 0 ? opening(mt.credit_account_id) : anticipi[m - 1])));
   }
 
   const giro = rule('card_giroconto');
@@ -228,13 +242,13 @@ function applyRules(causali, openings, channels, fin) {
     const card = giro.debit_account_id;
     const costs = total(channels, causali.filter((c) => c.kind === 'costo' && c.credit_account_id === card).map((c) => c.id));
     const revenues = total(channels, causali.filter((c) => c.kind === 'ricavo' && c.debit_account_id === card).map((c) => c.id));
-    fin.set(giro.id, costs.map((v, m) => round2(v - revenues[m])));
+    set(giro, costs.map((v, m) => round2(v - revenues[m])));
   }
 
   const addebito = rule('card_addebito');
   if (addebito) {
     const g = giro ? fin.get(giro.id) : zeros();
-    fin.set(addebito.id, g.map((_, m) => (m === 0 ? opening(addebito.debit_account_id) : g[m - 1])));
+    set(addebito, g.map((_, m) => (m === 0 ? opening(addebito.debit_account_id) : g[m - 1])));
   }
 }
 

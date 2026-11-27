@@ -42,7 +42,8 @@ test('righe modificabili e calcolate', () => {
   eq(rows.get('acc-Ristoranti').edit, { table: 'budget_accounts', id: 'Ristoranti' }, 'voce economica');
   eq(rows.get('fin-PREFIN').edit, { table: 'budget_causali', id: 'PREFIN' }, 'causale finanziaria manuale');
   for (const code of ['GCCCRED', 'ADDCCRED', 'RIMMT']) {
-    eq(rows.get('fin-' + code).edit, null, code + ' calcolata');
+    eq(rows.get('fin-' + code).edit, { table: 'budget_causali', id: code }, code + ' calcolata ma scrivibile a mano');
+    eq(rows.get('fin-' + code).manual, new Array(12).fill(false), code + ': nessun mese scritto a mano');
     ok(rows.get('fin-' + code).rule, code + ' con regola');
   }
   eq(rows.get('ch-COSCCRED').edit, undefined, 'riga di canale calcolata');

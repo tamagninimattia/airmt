@@ -188,7 +188,7 @@ function closeCard() {
       item(!c.budgetDiffs.length, c.budgetDiffs.length
         ? `${c.budgetDiffs.length} voci con budget diverso dal consuntivo`
         : 'Budget allineato al consuntivo',
-        c.budgetDiffs.length > 0 && h('p', { class: 'hint' }, 'Le causali calcolate si allineano da sole quando lo sono voci, canali e Var. ',
+        c.budgetDiffs.length > 0 && h('p', { class: 'hint' }, 'Si allineano anche le causali calcolate: il consuntivo diventa un valore scritto a mano, al posto del calcolato. ',
           h('a', { href: '#/budget/' + data.year }, 'Apri il Budget')),
         manual.length > 0 && h('div', { class: 'actions tight' }, alignBtn), diffs),
       item(!c.varToAlign.length, c.varToAlign.length ? `${c.varToAlign.length} Var da allineare` : 'Var allineate con gli Alert',
