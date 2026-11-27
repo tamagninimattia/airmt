@@ -15,7 +15,7 @@
 // Budget calcolati (mai inseriti a mano): imprevisti, giroconto e addebito carta, rimborsi MT.
 import { round2 } from '../format.js';
 import { netWorth } from './balances.js';
-import { channelAlert } from '../journal-model.js';
+import { channelAlert, stornoAlert } from '../journal-model.js';
 
 export const zeros = () => new Array(12).fill(0);
 const sum = (s) => round2(s.reduce((t, v) => t + v, 0));
@@ -205,8 +205,11 @@ export function computeBudget({ accounts, causali, openings, budgetAccounts, bud
 
   return {
     econ, channels, adjustments: vars, causali: fin, overrides, moves, closing, ricavi, costi,
-    // "Verifica Variazioni": la somma di tutte le Var del mese deve fare 0
-    varCheck: total(vars, [...vars.keys()]),
+    // "Verifica Variazioni": Var sui canali di costo − Var sui canali di ricavo, per mese, deve fare 0.
+    // Uno spostamento tra canali dello stesso tipo si compensa da solo (−x e +x); uno storno mette +x
+    // su un canale di costo e +x su uno di ricavo: il risultato di budget non cambia.
+    varCheck: zeros().map((_, m) => round2([...vars].reduce((t, [id, s]) =>
+      t + (byId.get(id)?.kind === 'ricavo' ? -s[m] : s[m]), 0))),
     // voci con budget ma senza canale standard: non muovono nessun conto e rompono la quadratura
     unassigned: accounts.filter((a) => a.type === 'economico' && !channels.has(a.standard_causale_id)
                                        && get(econ, a.id).some((v) => v !== 0)),
@@ -318,10 +321,12 @@ export function suggestAdjustments({ year, accounts, causali, entries }) {
     if (+e.entry_date.slice(0, 4) !== year) continue;
     const c = causale.get(e.causale_id);
     const a = account.get(c?.kind === 'ricavo' ? e.credit_account_id : e.debit_account_id);
-    if (!channelAlert(c, a)) continue;
+    const storno = stornoAlert(c, a);
+    if (!channelAlert(c, a) && !storno) continue;
     const m = +e.entry_date.slice(5, 7) - 1;
     add(out, c.id, m, Number(e.amount));
-    add(out, a.standard_causale_id, m, -Number(e.amount));
+    // fuori canale: si toglie dal canale standard; storno: si aggiunge (canale standard di tipo opposto)
+    add(out, a.standard_causale_id, m, storno ? Number(e.amount) : -Number(e.amount));
   }
   return roundAll(out);
 }

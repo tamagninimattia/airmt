@@ -332,11 +332,13 @@ select
   ea.id   as economic_account_id,
   ea.name as economic_account_name,
   ea.standard_causale_id,
+  -- Alert: causale diversa dal canale standard, oppure storno (voce di costo con causale di ricavo o
+  -- viceversa: rimborsi, resi, vendite), che chiede anch'esso le Var
   coalesce(not e.provisional
-           and ea.kind = c.kind
            and ea.standard_causale_id is not null
-           and ea.standard_causale_id <> e.causale_id, false) as channel_alert,
-  e.provisional
+           and (ea.kind <> c.kind or ea.standard_causale_id <> e.causale_id), false) as channel_alert,
+  e.provisional,
+  coalesce(ea.kind <> c.kind, false) as storno
 from entries e
 join causali c on c.id = e.causale_id
 left join accounts ea
@@ -391,16 +393,18 @@ stable
 set search_path = public
 as $$
   with a as (
-    select ee.causale_id as actual_causale, ee.standard_causale_id as std_causale, ee.amount
+    select ee.causale_id as actual_causale, ee.standard_causale_id as std_causale, ee.amount, ee.storno
       from entries_enriched ee
      where ee.channel_alert
        and ee.entry_date >= make_date(p_year, p_month, 1)
        and ee.entry_date <  (make_date(p_year, p_month, 1) + interval '1 month')::date
   ),
+  -- fuori canale: + sul canale usato, − sul canale standard; storno: + su entrambi
+  -- (canali di tipo opposto: costi e ricavi del budget crescono insieme, il risultato non cambia)
   m as (
-    select actual_causale as causale_id,  amount from a
+    select actual_causale as causale_id, amount from a
     union all
-    select std_causale,                  -amount from a
+    select std_causale, case when storno then amount else -amount end from a
   )
   select m.causale_id, sum(m.amount)::numeric(14,2)
     from m

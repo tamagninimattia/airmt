@@ -255,7 +255,7 @@ function updateStatus() {
     ? h('li', { class: 'warn' }, `${todo} Var da allineare (${months(S.align.counts)}): usa «allinea» nella riga Var da allineare.`)
     : h('li', { class: 'ok' }, 'Var allineate con gli Alert del Giornale.'));
   items.push(S.budget.varCheck.some((v) => v !== 0)
-    ? h('li', { class: 'warn' }, `Verifica Variazioni: le Var non fanno 0 in ${months(S.budget.varCheck)}. Ogni importo spostato va tolto da un altro canale.`)
+    ? h('li', { class: 'warn' }, `Verifica Variazioni: le Var non fanno 0 in ${months(S.budget.varCheck)}. Ogni importo spostato va tolto da un altro canale; per uno storno va aggiunto anche al canale standard della voce.`)
     : h('li', { class: 'ok' }, 'Verifica Variazioni: 0.'));
   items.push(S.budget.quadratura.some((v) => v !== 0)
     ? h('li', { class: 'warn' }, `Quadratura del budget diversa da 0 in ${months(S.budget.quadratura)}.`)

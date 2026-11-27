@@ -90,8 +90,8 @@ function drawList(ctx) {
   const alerts = ctx.entries.filter((e) => e.channel_alert).length;
   ctx.summary.hidden = !alerts;
   ctx.summary.textContent = alerts === 1
-    ? '1 registrazione fuori canale questo mese: ricorda le Var +/- nel Budget.'
-    : `${alerts} registrazioni fuori canale questo mese: ricorda le Var +/- nel Budget.`;
+    ? '1 registrazione fuori canale o storno questo mese: ricorda le Var +/- nel Budget.'
+    : `${alerts} registrazioni fuori canale o storni questo mese: ricorda le Var +/- nel Budget.`;
 
   if (!ctx.entries.length) {
     ctx.list.replaceChildren(h('li', { class: 'empty' }, 'Nessuna registrazione in questo mese.'));

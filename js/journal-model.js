@@ -52,6 +52,15 @@ export function channelAlert(causale, account) {
     && account.standard_causale_id !== causale.id);
 }
 
+// Storno: voce di costo registrata con una causale di ricavo (rimborso, reso, vendita) o viceversa.
+// Anche lo storno chiede le Var: +importo sul canale usato e +importo sul canale standard della voce
+// (i due canali sono di tipo opposto: costi e ricavi del budget crescono insieme e il risultato non cambia).
+export function stornoAlert(causale, account) {
+  return Boolean(causale && account && needsEconomic(causale)
+    && account.type === 'economico' && account.kind !== causale.kind
+    && account.standard_causale_id);
+}
+
 export function alertText(account, standardCode, isoDate) {
   const month = MONTHS[+isoDate.slice(5, 7) - 1];
   return `Fuori canale: il canale standard di «${account.name}» è ${standardCode}. ` +

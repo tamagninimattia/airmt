@@ -34,6 +34,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - `js/dashboard-model.js`: periodo di confronto, riepilogo, numeri chiave, scostamenti per sezione e per voce. `js/charts.js`: grafici SVG senza librerie (linee e barre), disegnati alla larghezza reale del riquadro.
 - `js/closing-model.js`: riconciliazione per mese (`reconciliationRows`), controlli prima della chiusura (`monthChecks`), chiusura dell'anno, saldi iniziali dell'anno dopo.
 - `contabilita_schema.sql`: tabelle, RLS, controllo del Giornale, vista `entries_enriched`, funzioni `seed_default_chart`, `init_year`, `account_balances`, `suggest_channel_adjustments`.
+- `migrazione_storni_var.sql`: Alert e Var suggerite anche per gli storni (vista `entries_enriched` e `suggest_channel_adjustments`; da eseguire una volta).
 - `migrazione_importazioni.sql`: aggiunge al database già creato la tabella `imports` e la colonna `entries.import_id` (da eseguire una volta).
 - `migrazione_preferiti_provvisori.sql`: aggiunge al database già creato i preferiti (`favorites`) e i movimenti provvisori (`entries.provisional`, vista e `account_balances` aggiornate); da eseguire una volta, lo schema aggiornato lo include già.
 - `migrazione_rimmt.sql`: rende calcolato il budget di `RIMMT` nel database già creato (da eseguire una volta; lo schema aggiornato lo include già per le nuove installazioni).
@@ -68,7 +69,8 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 - Scopo dell'Alert: ricordare di compilare le righe **Var +/-** del Budget per quel mese e canale. Una Var sposta budget da un canale a un altro (meno sul canale standard, più su quello reale).
 - Il budget per canale (righe "di cui Portafoglio, C/C Fineco, ...") è: somma del budget delle voci con quel canale standard + Var +/-.
 - Le Var si inseriscono a mano, con in più un pulsante "applica suggerimento" che usa `suggest_channel_adjustments(anno, mese)` (importo modificabile prima del salvataggio).
-- Nel Budget mostrare per mese e canale quante Var restano da allineare, e il controllo "Verifica Variazioni": la somma di tutte le Var deve fare 0. Le Var da allineare si contano solo fino al mese corrente: nei mesi futuri non ci sono registrazioni e le Var sono pianificazione. Il suggerimento è calcolato in JavaScript (`suggestAdjustments`) con la stessa regola di `suggest_channel_adjustments`.
+- Nel Budget mostrare per mese e canale quante Var restano da allineare, e il controllo "Verifica Variazioni" (vedi sotto gli storni) che deve fare 0. Le Var da allineare si contano solo fino al mese corrente: nei mesi futuri non ci sono registrazioni e le Var sono pianificazione. Il suggerimento è calcolato in JavaScript (`suggestAdjustments`) con la stessa regola di `suggest_channel_adjustments`.
+- Storni (voce di costo con causale di ricavo, cioè rimborsi, resi e vendite, o viceversa): danno anch'essi Alert e chiedono le Var, ma con lo stesso segno sui due canali, +importo sul canale usato e +importo sul canale standard della voce (canali di tipo opposto). Per questo "Verifica Variazioni" è Var sui canali di costo − Var sui canali di ricavo, per mese, e deve fare 0: è la condizione che tiene a 0 la quadratura del budget (`stornoAlert`, `varCheck`; nel database la vista `entries_enriched` ha la colonna `storno`, vedi `migrazione_storni_var.sql`).
 - Le Var cambiano anche il giroconto della carta e i saldi di budget delle schede conto.
 
 ## Budget

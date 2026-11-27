@@ -233,3 +233,17 @@ test('causali calcolate: un valore scritto a mano vale al posto del calcolato', 
   eq(over.overrides.get('ADDCCRED').slice(0, 2), [0, null], 'mesi scritti e calcolati');
   eq(base.overrides.size, 0, 'senza righe salvate tutto calcolato');
 });
+
+test('storni: Var suggerite e Verifica Variazioni', () => {
+  // rimborso di 10 € su una voce di costo (canale standard: carta) incassato su PayPal
+  const storno = { entry_date: '2027-02-10', causale_id: 'RICPAY', debit_account_id: 'Paypal', credit_account_id: 'Pokèmon', amount: 10 };
+  const data = year2027({ entries: [storno] });
+  const s = suggestAdjustments(data);
+  eq([s.get('RICPAY')[1], s.get('COSCCRED')[1]], [10, 10], '+10 sul canale usato e +10 sul canale standard della voce');
+  const check = (adjustments) => computeBudget({ ...data, adjustments }).varCheck[1];
+  eq(check([{ month: 2, causale_id: 'RICPAY', amount: 10 }, { month: 2, causale_id: 'COSCCRED', amount: 10 }]), 0, 'storno: si compensa');
+  eq(check([{ month: 2, causale_id: 'COSCCRED', amount: -10 }, { month: 2, causale_id: 'COSPAY', amount: 10 }]), 0, 'fuori canale: si compensa');
+  eq(check([{ month: 2, causale_id: 'COSCCRED', amount: 5 }]), 5, 'Var senza contropartita');
+  eq(computeBudget({ ...data, adjustments: [{ month: 2, causale_id: 'RICPAY', amount: 10 }, { month: 2, causale_id: 'COSCCRED', amount: 10 }] })
+     .quadratura[1], 0, 'la quadratura del budget resta a 0');
+});
