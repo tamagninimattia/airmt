@@ -6,6 +6,13 @@ import { sortByOrder, GROUPS } from './settings-model.js';
 
 const nonzero = (s) => Boolean(s?.some((v) => v !== 0));
 
+// "Usa i saldi calcolati": per i conti ancora senza saldo reale, il saldo calcolato del mese.
+// I saldi già inseriti restano come sono. Righe pronte per la tabella reconciliations.
+export function fillFromCalculated(rows, userId, year, month) {
+  return rows.filter((r) => r.status === 'missing')
+    .map((r) => ({ user_id: userId, year, month, account_id: r.account.id, actual_balance: r.calculated, note: null }));
+}
+
 /**
  * Riconciliazione di un mese: per ogni conto patrimoniale il saldo calcolato (consuntivo a fine mese)
  * e quello reale inserito. status: 'ok' (coincidono), 'diff' (diversi), 'missing' (saldo reale non inserito)

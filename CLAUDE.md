@@ -119,7 +119,7 @@ Utente singolo: Mattia. Lingua dell'interfaccia e dei commenti: italiano.
 ## Riconciliazione ("Saldo per controllo")
 
 - Tabella `reconciliations`: saldo reale di banca per conto e mese. Evidenziare quando coincide o no con il saldo calcolato. Saldi negativi in rosso.
-- Si inserisce nelle Chiusure (saldo vuoto = riga cancellata). Nelle schede conto compaiono le righe "Saldo per controllo" e "Differenza", nella colonna Progr. dei mesi esplosi.
+- Si inserisce nelle Chiusure (saldo vuoto = riga cancellata), in celle gialle come quelle del Budget. "Usa i saldi calcolati" (con conferma) copia il saldo calcolato come saldo reale nei conti ancora vuoti, senza toccare quelli già scritti (`fillFromCalculated`; deciso con Mattia). Nelle schede conto compaiono le righe "Saldo per controllo" e "Differenza", nella colonna Progr. dei mesi esplosi.
 
 ## Viste previste
 

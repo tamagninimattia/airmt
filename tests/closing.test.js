@@ -6,7 +6,7 @@ import { E } from './expected-2027.js';
 import { round2 } from '../js/format.js';
 import { computeActual, computeBudget, suggestAdjustments } from '../js/engine/year.js';
 import { alignmentByMonth } from '../js/budget-model.js';
-import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows } from '../js/closing-model.js';
+import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows, fillFromCalculated } from '../js/closing-model.js';
 import { cardRows } from '../js/accounts-model.js';
 
 const result = (data) => ({ actual: computeActual(data), budget: computeBudget(data) });
@@ -110,4 +110,18 @@ test('allinea tutto il budget del mese al consuntivo', () => {
     }
   }
   eq(monthChecks(data, result(data), 1).budgetDiffs, [], 'tutto allineato');
+});
+
+test('riconciliazione: usa i saldi calcolati solo dove manca il saldo reale', () => {
+  const data = year2027({ entries: PROVA_GIORNALE, reconciliations: [{ month: 1, account_id: 'Portafoglio', actual_balance: 1, note: 'contati' }] });
+  const rows = reconciliationRows(data, computeActual(data), 1);
+  const out = fillFromCalculated(rows, 'u1', 2027, 1);
+  ok(!out.some((r) => r.account_id === 'Portafoglio'), 'il saldo già inserito resta');
+  eq(out.length, rows.filter((r) => r.status === 'missing').length, 'tutti gli altri conti');
+  const fin = rows.find((r) => r.account.id === 'Conto corrente FINECO');
+  eq(out.find((r) => r.account_id === 'Conto corrente FINECO')?.actual_balance, fin.calculated, 'saldo calcolato del mese');
+  // dopo il salvataggio, tutti i conti compilati coincidono
+  const after = reconciliationRows({ ...data, reconciliations: [...data.reconciliations,
+    ...out.map((r) => ({ month: 1, account_id: r.account_id, actual_balance: r.actual_balance, note: '' }))] }, computeActual(data), 1);
+  ok(after.every((r) => r.status === 'ok' || r.account.id === 'Portafoglio'), 'coincidono');
 });

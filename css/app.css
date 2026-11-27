@@ -473,6 +473,12 @@ table.list td.neg { color: var(--error); }
 .month-strip a.current { border-color: var(--accent); }
 .month-strip a[aria-current] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 table.rec input.amount { width: 8.5rem; }
+/* saldo reale da digitare: giallo come le celle del Budget (deciso con Mattia) */
+table.rec input.real { background: var(--input-cell); color: var(--on-input-cell); border-color: transparent; }
+table.rec input.real:hover { border-color: var(--warn); }
+table.rec input.real:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent); }
+table.rec input.real::placeholder { color: var(--on-input-cell); opacity: .5; }
+table.rec input.real[aria-invalid=true] { border-color: var(--on-input-cell-error); box-shadow: 0 0 0 2px var(--error); }
 table.rec input.note { width: 100%; min-width: 7rem; padding: .35rem .5rem; }
 table.rec th[scope=row] { font-weight: 400; text-align: left; }
 table.rec td.ok { color: var(--good); font-weight: 600; white-space: nowrap; }

@@ -5,7 +5,7 @@ import { h, say, busy, confirmBox, noYear } from '../ui.js';
 import { loadYear, yearList, pickYear } from '../data.js';
 import { computeActual, computeBudget, suggestAdjustments } from '../engine/year.js';
 import { currentMonth, alignmentByMonth } from '../budget-model.js';
-import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows } from '../closing-model.js';
+import { reconciliationRows, monthChecks, yearClosable, nextYearOpenings, alignMonthRows, fillFromCalculated } from '../closing-model.js';
 import { MONTHS, fmtAmount, parseAmount, isoDate, round2 } from '../format.js';
 
 const SHORT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
@@ -81,10 +81,17 @@ function reconciliationCard() {
     }
     body.push(recRow(r));
   }
+  const missing = list.filter((r) => r.status === 'missing').length;
+  const fill = h('button', { type: 'button', class: 'quiet small', disabled: missing === 0,
+                             title: 'Scrive il saldo calcolato come saldo reale nei conti ancora vuoti' },
+    missing ? `Usa i saldi calcolati (${missing} ${missing === 1 ? 'conto vuoto' : 'conti vuoti'})` : 'Usa i saldi calcolati');
+  fill.addEventListener('click', () => fillReconciliations(fill, list));
   return [
     h('h2', { id: 'rec-title' }, 'Riconciliazione di ' + MONTHS[month - 1]),
     h('p', { class: 'hint' }, 'Scrivi il saldo reale a fine mese (estratto conto, app della banca, contanti contati): ' +
-      'lo confronto con il saldo calcolato dalle registrazioni. Lascia vuoto per i conti che non controlli.'),
+      'lo confronto con il saldo calcolato dalle registrazioni. Lascia vuoto per i conti che non controlli. ' +
+      'Se i saldi calcolati sono giusti, «Usa i saldi calcolati» li copia nei conti ancora vuoti.'),
+    h('div', { class: 'actions tight' }, fill),
     h('div', { class: 'table-wrap' }, h('table', { class: 'list rec' },
       h('thead', null, h('tr', null,
         h('th', { scope: 'col' }, 'Conto'), h('th', { scope: 'col', class: 'num' }, 'Calcolato'),
@@ -95,7 +102,7 @@ function reconciliationCard() {
 }
 
 function recRow(r) {
-  const real = h('input', { class: 'amount', inputmode: 'decimal', autocomplete: 'off',
+  const real = h('input', { class: 'amount real', inputmode: 'decimal', autocomplete: 'off',
                             value: r.real == null ? '' : fmtAmount(r.real), 'aria-label': 'Saldo reale ' + r.account.name });
   const note = h('input', { class: 'note', autocomplete: 'off', value: r.note, 'aria-label': 'Nota ' + r.account.name });
   const diff = h('td', { class: 'num' });
@@ -111,6 +118,23 @@ function recRow(r) {
     h('th', { scope: 'row' }, r.account.name),
     h('td', { class: 'num' + (r.calculated < 0 ? ' neg' : '') }, fmtAmount(r.calculated)),
     h('td', { class: 'num' }, real), diff, h('td', null, note));
+}
+
+// "Usa i saldi calcolati": il saldo calcolato diventa il saldo reale dei conti ancora vuoti
+async function fillReconciliations(button, list) {
+  const { data, month } = S;
+  const recs = fillFromCalculated(list, S.session.user.id, data.year, month);
+  if (!recs.length) return;
+  const ok = await confirmBox({ title: `Usare i saldi calcolati di ${MONTHS[month - 1]}?`, ok: 'Usa i saldi calcolati',
+    lines: [`${recs.length} ${recs.length === 1 ? 'conto vuoto prende' : 'conti vuoti prendono'} come saldo reale il saldo calcolato.`,
+            'I saldi reali che hai già scritto non cambiano. Potrai correggere o svuotare ogni cella.'] });
+  if (!ok) return;
+  busy(button, 'Salvataggio dei saldi reali', async () => {
+    await rows(sb.from('reconciliations').upsert(recs, { onConflict: 'user_id,year,month,account_id' }));
+    data.reconciliations.push(...recs.map((r) => ({ month, account_id: r.account_id, actual_balance: r.actual_balance, note: '' })));
+    draw();
+    say(`Saldi reali di ${MONTHS[month - 1]} compilati con i saldi calcolati: ${recs.length} conti.`);
+  });
 }
 
 // Salva (o cancella, se il saldo è vuoto) il saldo reale di un conto per il mese scelto
