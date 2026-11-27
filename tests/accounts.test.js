@@ -44,27 +44,38 @@ test('scheda Portafoglio: consuntivo con il Giornale di prova', () => {
   eq(rows.get('opening').actual[1], X.actualJanuary.closing.Portafoglio, 'febbraio parte dal consuntivo di gennaio');
 });
 
-test('movimenti del mese con saldo progressivo', () => {
+test('movimenti dell\'anno con saldo progressivo', () => {
   const entries = [...PROVA_GIORNALE, { id: 'x', entry_date: '2027-02-10', causale_id: 'PREFIN',
     debit_account_id: 'Portafoglio', credit_account_id: FIN, amount: 50, note: 'bancomat' }];
   const data = year2027({ entries });
   const r = result(data);
   const port = X.actualJanuary.closing.Portafoglio;
-  const jan = accountLedger(data, r.actual, 'Portafoglio', 1);
-  eq([jan.start, jan.lines.length, jan.end], [data.openings.Portafoglio, 2, port], 'gennaio');
-  const feb = accountLedger(data, r.actual, 'Portafoglio', 2);
-  eq(feb.start, port, 'saldo iniziale di febbraio');
-  eq(feb.lines[0], { id: 'x', date: '2027-02-10', code: 'PREFIN', label: FIN, note: 'bancomat',
+  const all = accountLedger(data, 'Portafoglio');
+  eq([all.start, all.lines.length], [data.openings.Portafoglio, 3], 'tutto l\'anno');
+  eq(all.lines[1].balance, port, 'saldo a fine gennaio');
+  eq(all.lines[2], { id: 'x', date: '2027-02-10', label: FIN, note: 'bancomat',
                      plus: 50, minus: 0, balance: round2(port + 50), provisional: false }, 'prelievo');
+  eq(all.end, r.actual.closing.get('Portafoglio')[11], 'saldo finale = saldo di dicembre');
   // movimento provvisorio: compare tra i movimenti ma non cambia saldi
   const prov = [{ id: 'p', entry_date: '2027-02-05', causale_id: 'PREFIN', debit_account_id: 'Portafoglio',
                   credit_account_id: FIN, amount: 30, note: null }];
-  const withProv = accountLedger(data, r.actual, 'Portafoglio', 2, { provisional: prov });
-  eq(withProv.lines.map((l) => [l.id, l.provisional, l.balance]), [['p', true, null], ['x', false, round2(port + 50)]], 'in ordine di data, senza saldo');
-  eq(withProv.end, feb.end, 'saldo finale invariato');
-  ok(!accountLedger(data, r.actual, 'Portafoglio', 3, { provisional: prov }).lines.some((l) => l.id === 'p'), 'solo nel suo mese');
-  const fin = accountLedger(data, r.actual, FIN, 2);
-  eq([fin.lines[0].plus, fin.lines[0].minus, fin.end], [0, 50, round2(data.openings[FIN] - 50)], 'stesso movimento visto da Fineco');
+  const withProv = accountLedger(data, 'Portafoglio', { provisional: prov });
+  eq(withProv.lines.slice(2).map((l) => [l.id, l.provisional, l.balance]), [['p', true, null], ['x', false, round2(port + 50)]], 'in ordine di data, senza saldo');
+  eq(withProv.end, all.end, 'saldo finale invariato');
+  const fin = accountLedger(data, FIN);
+  const last = fin.lines.at(-1);
+  eq([last.plus, last.minus, fin.end], [0, 50, r.actual.closing.get(FIN)[11]], 'stesso movimento visto da Fineco');
+});
+
+test('movimenti di un conto economico: totale progressivo da 0', () => {
+  const data = year2027({ entries: PROVA_GIORNALE });
+  const r = result(data);
+  const voce = data.accounts.find((a) => a.type === 'economico' && a.kind === 'costo'
+    && data.entries.some((e) => e.debit_account_id === a.id));
+  const l = accountLedger(data, voce.id);
+  eq(l.start, 0, 'parte da 0');
+  ok(l.lines.length > 0 && l.lines.every((x) => x.plus > 0 && x.minus === 0), 'costi nel lato +');
+  eq(l.end, round2(r.actual.econ.get(voce.id).reduce((t, v) => t + v, 0)), 'totale = consuntivo dell\'anno');
 });
 
 test('lato delle causali su un conto', () => {

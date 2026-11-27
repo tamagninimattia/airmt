@@ -397,13 +397,17 @@ button.align:focus-visible { outline: 3px solid var(--focus); }
 .budget-head select { width: auto; min-width: 16rem; }
 table.grid th.label a.name { color: var(--ink); }
 table.grid td.future { opacity: .55; }
-.ledger { margin-top: 1.75rem; max-width: 60rem; }
+.ledger { margin-top: 1.25rem; max-width: 60rem; }
 .ledger-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: .6rem; }
 .ledger-head h2 { margin: 0; text-transform: none; }
-.ledger-head .month-nav { margin: 0; gap: .25rem; }
 .ledger table.list tr.edge td { font-weight: 600; background: var(--surface-2); }
 .ledger td.neg { color: var(--error); }
-.ledger-head label.prov-toggle { margin: 0; }
+/* movimenti di tutto l'anno: la tabella scorre dentro il riquadro, intestazione ferma */
+.ledger-wrap { max-height: 32rem; overflow-y: auto; }
+.ledger-wrap thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }
+.ledger table.list td a { color: inherit; }
+.card-summary { margin-top: 1.75rem; }
+.card-summary h2 { margin: 0 0 .6rem; text-transform: none; }
 /* Budget: Progr. che comprende movimenti provvisori */
 table.grid td.a.prov { color: var(--prov); font-style: italic; background: var(--prov-bg); }
 .budget-head .head-checks { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.25rem; }

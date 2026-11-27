@@ -7,8 +7,14 @@ import { GROUPS, sortByOrder } from './settings-model.js';
 const nonzero = (s) => Boolean(s?.some((v) => v !== 0));
 const sumSeries = (list) => list.reduce((out, s) => out.map((v, m) => round2(v + s[m])), zeros());
 
-// Variazioni + e − di un conto: per gli attivi entrano in Dare, per i passivi in Avere
+// Variazioni + e − di un conto: per gli attivi entrano in Dare, per i passivi in Avere;
+// per i conti economici il + è il lato naturale (ricavi in Avere, costi in Dare) e il − sono gli storni
 export function sides(account) {
+  if (account.type === 'economico') {
+    return account.kind === 'ricavo'
+      ? { plus: 'avere', minus: 'dare', plusLabel: 'Ricavi', minusLabel: 'Storni' }
+      : { plus: 'dare', minus: 'avere', plusLabel: 'Costi', minusLabel: 'Storni' };
+  }
   return account.side === 'passivo'
     ? { plus: 'avere', minus: 'dare', plusLabel: 'Incrementi', minusLabel: 'Decrementi' }
     : { plus: 'dare', minus: 'avere', plusLabel: 'Entrate', minusLabel: 'Uscite' };
@@ -85,21 +91,21 @@ export function cardRows(data, { actual, budget }, accountId, { showZero = false
 }
 
 /**
- * Movimenti reali di un conto in un mese, con il saldo progressivo.
- * Ogni riga: { id, date, code, label, note, plus, minus, balance }
+ * Movimenti reali di un conto in tutto l'anno, con il saldo progressivo
+ * (per i conti economici parte da 0: è il totale progressivo dell'anno).
+ * Ogni riga: { id, date, label, note, plus, minus, balance, provisional }
  */
 // provisional: movimenti provvisori da mostrare (in lilla) tra quelli reali; non muovono il saldo
 // progressivo né il saldo finale, che restano quelli del consuntivo (balance = null).
-export function accountLedger(data, actual, accountId, month, { provisional = [] } = {}) {
+export function accountLedger(data, accountId, { provisional = [] } = {}) {
   const account = data.accounts.find((a) => a.id === accountId);
   const s = sides(account);
   const name = (id) => data.accounts.find((a) => a.id === id)?.name ?? '–';
-  const causale = (id) => data.causali.find((c) => c.id === id);
-  const prefix = `${data.year}-${String(month).padStart(2, '0')}`;
-  let balance = month === 1 ? Number(data.openings[accountId] || 0) : actual.closing.get(accountId)[month - 2];
+  let balance = account.type === 'economico' ? 0 : Number(data.openings[accountId] || 0);
   const start = balance;
 
-  const mine = (e) => e.entry_date.startsWith(prefix) && (e.debit_account_id === accountId || e.credit_account_id === accountId);
+  const mine = (e) => e.entry_date.startsWith(String(data.year))
+    && (e.debit_account_id === accountId || e.credit_account_id === accountId);
   const lines = [...data.entries.filter(mine), ...provisional.filter(mine).map((e) => ({ ...e, provisional: true }))]
     .sort((a, b) => a.entry_date.localeCompare(b.entry_date))
     .map((e) => {
@@ -109,8 +115,7 @@ export function accountLedger(data, actual, accountId, month, { provisional = []
       const plus = side === s.plus ? amount : 0;
       const minus = side === s.minus ? amount : 0;
       if (!e.provisional) balance = round2(balance + plus - minus);
-      const c = causale(e.causale_id);
-      return { id: e.id, date: e.entry_date, code: c?.code ?? '', label: name(other), note: e.note || '',
+      return { id: e.id, date: e.entry_date, label: name(other), note: e.note || '',
                plus, minus, balance: e.provisional ? null : balance, provisional: Boolean(e.provisional) };
     });
   return { start, lines, end: balance };
