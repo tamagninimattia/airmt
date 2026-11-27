@@ -365,6 +365,8 @@ table.grid tr.inactive th.label .name { color: var(--muted); }
 table.grid th.label code { margin-left: .4rem; font-size: .75rem; }
 table.grid th.label .badge { font-size: .7rem; }
 .warn-badge { background: var(--warn-bg); color: var(--warn-ink); }
+/* Budget: colonna Voce più stretta, così la griglia sta nello schermo senza scorrere (nomi lunghi troncati, interi passandoci sopra) */
+@media (min-width: 40.01rem) { table.grid.edit th.label { width: 13rem; min-width: 13rem; max-width: 13rem; } }
 button.row-menu { all: unset; cursor: pointer; float: right; padding: 0 .4rem; margin-left: .3rem; border-radius: 4px; color: var(--muted); font-weight: 600; }
 button.row-menu:hover, button.row-menu:focus-visible { background: var(--surface-muted); color: var(--ink); }
 input.cell {

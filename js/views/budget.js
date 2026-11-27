@@ -164,7 +164,7 @@ function labelCell(row) {
     row.accountId && !row.contingency
       ? h('a', { class: 'name', href: '#/partitario/' + S.data.year + '/' + encodeURIComponent(row.accountId),
                  title: 'Apri il partitario di ' + row.label }, row.label)
-      : h('span', { class: 'name' + (row.calc ? ' calc-name' : ''), title: row.calc || null }, row.label),
+      : h('span', { class: 'name' + (row.calc ? ' calc-name' : ''), title: row.calc || row.label }, row.label),
     row.contingency && h('span', { class: 'badge' }, 'imprevisti'),
     row.noChannel && h('span', { class: 'badge warn-badge', title: 'Senza canale standard il budget di questa voce non muove nessun conto: impostalo nelle Impostazioni.' }, 'senza canale'),
     row.edit && row.type === 'line' && h('button', { type: 'button', class: 'row-menu',
